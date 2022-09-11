@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.3.32825.248
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArgumentParser", "ArgumentParser\ArgumentParser.csproj", "{CD575E62-218A-4E72-8A6C-EE81EE7BD21F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArgumentParser", "ArgumentParser\ArgumentParser.csproj", "{CD575E62-218A-4E72-8A6C-EE81EE7BD21F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.ArgumentParser", "Test.ArgumentParser\Test.ArgumentParser.csproj", "{4C556C4B-457A-44AA-9BE9-20D81F097985}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.ArgumentParser", "Test.ArgumentParser\Test.ArgumentParser.csproj", "{4C556C4B-457A-44AA-9BE9-20D81F097985}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -8,26 +8,31 @@ public class TestParser
     public void Test_DefaultSeparators()
     {
         var parser = 
-            new Parser("sales 1");
+            new Parser();
 
-        Assert.Equal(2, parser.Arguments.Count);
-        Assert.Single(parser.IntegerArguments);
-        Assert.Empty(parser.DecimalArguments);
-        Assert.Single(parser.StringArguments);
-        Assert.Single(parser.EnumArgumentsOfType<EmployeeType>());
+        var parsedArguments =
+            parser.Parse("sales 1");
+
+        Assert.Equal(2, parsedArguments.Arguments.Count);
+        Assert.Single(parsedArguments.IntegerArguments);
+        Assert.Empty(parsedArguments.DecimalArguments);
+        Assert.Single(parsedArguments.StringArguments);
+        Assert.Single(parsedArguments.EnumArgumentsOfType<EmployeeType>());
     }
 
     [Fact]
     public void Test_PassedInSeparators()
     {
-        var parser = 
-            new Parser("abc,1, 2, 3,  ,MARKETING, , , 123.45", 
-                new []{',', ' '});
+        var parser =
+            new Parser(new[] { ',', ' ' });
 
-        Assert.Equal(6, parser.Arguments.Count);
-        Assert.Equal(3, parser.IntegerArguments.Count);
-        Assert.Single(parser.DecimalArguments);
-        Assert.Equal(2, parser.StringArguments.Count);
-        Assert.Single(parser.EnumArgumentsOfType<EmployeeType>());
+        var parsedArguments =
+            parser.Parse("abc,1, 2, 3,  ,MARKETING, , , 123.45");
+
+        Assert.Equal(6, parsedArguments.Arguments.Count);
+        Assert.Equal(3, parsedArguments.IntegerArguments.Count);
+        Assert.Single(parsedArguments.DecimalArguments);
+        Assert.Equal(2, parsedArguments.StringArguments.Count);
+        Assert.Single(parsedArguments.EnumArgumentsOfType<EmployeeType>());
     }
 }
