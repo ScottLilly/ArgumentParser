@@ -12,6 +12,11 @@ namespace ArgumentParser
         public List<decimal> DecimalArguments { get; }
         public List<string> StringArguments { get; }
 
+        // This will ignore integer parameters, which might map to an enum value.
+        public IEnumerable<T> GetEnumArgumentsOfType<T>() where T : struct =>
+            StringArguments.Where(a => Enum.TryParse(a, true, out T _))
+                .Select(a => (T)Enum.Parse(typeof(T), a, true));
+
         public Parser(string arguments) 
             : this(arguments, new[]{' '})
         {
@@ -26,12 +31,12 @@ namespace ArgumentParser
                     .ToList();
 
             // Find arguments that are integers or decimals
-            IEnumerable<string> integerArgumentsAsStrings = 
+            var integerArgumentsAsStrings = 
                 Arguments
                     .Where(a => int.TryParse(a, out _))
                     .ToList();
 
-            IEnumerable<string> decimalArgumentsAsStrings =
+            var decimalArgumentsAsStrings =
                 Arguments
                     .Except(integerArgumentsAsStrings)
                     .Where(a => decimal.TryParse(a, out _))
