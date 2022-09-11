@@ -6,32 +6,11 @@ namespace ArgumentParser
 {
     public class Parser
     {
-        private readonly string _arguments;
-        private readonly char[] _separators;
+        public List<string> Arguments { get; }
 
-        public IEnumerable<string> Arguments => 
-            _arguments
-                .Split(_separators, StringSplitOptions.RemoveEmptyEntries);
-
-        private IEnumerable<string> IntegerArgumentsAsStrings =>
-            Arguments
-                .Where(a => int.TryParse(a, out _));
-        public IEnumerable<int> IntegerArguments =>
-            IntegerArgumentsAsStrings
-                .Select(int.Parse);
-
-        private IEnumerable<string> DecimalArgumentsAsStrings =>
-            Arguments
-                .Except(IntegerArgumentsAsStrings)
-                .Where(a => decimal.TryParse(a, out _));
-        public IEnumerable<decimal> DecimalArguments =>
-            DecimalArgumentsAsStrings
-                .Select(decimal.Parse);
-
-        public IEnumerable<string> StringArguments =>
-            Arguments
-                .Except(IntegerArgumentsAsStrings)
-                .Except(DecimalArgumentsAsStrings);
+        public List<int> IntegerArguments { get; }
+        public List<decimal> DecimalArguments { get; }
+        public List<string> StringArguments { get; }
 
         public Parser(string arguments) 
             : this(arguments, new[]{' '})
@@ -40,8 +19,37 @@ namespace ArgumentParser
 
         public Parser(string arguments, char[] separators)
         {
-            _arguments = arguments;
-            _separators = separators;
+            Arguments = 
+                arguments.Split(separators, 
+                    StringSplitOptions.RemoveEmptyEntries)
+                    .ToList();
+
+            IEnumerable<string> integerArgumentsAsStrings = 
+                Arguments
+                    .Where(a => int.TryParse(a, out _))
+                    .ToList();
+
+            IntegerArguments =
+                integerArgumentsAsStrings
+                    .Select(int.Parse)
+                    .ToList();
+
+            IEnumerable<string> decimalArgumentsAsStrings = 
+                Arguments
+                    .Except(integerArgumentsAsStrings)
+                    .Where(a => decimal.TryParse(a, out _))
+                    .ToList();
+
+            DecimalArguments =
+                decimalArgumentsAsStrings
+                    .Select(decimal.Parse)
+                    .ToList();
+
+            StringArguments =
+                Arguments
+                    .Except(integerArgumentsAsStrings)
+                    .Except(decimalArgumentsAsStrings)
+                    .ToList();
         }
     }
 }
