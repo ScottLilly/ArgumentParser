@@ -12,8 +12,9 @@ namespace ArgumentParser
         public List<decimal> DecimalArguments { get; }
         public List<string> StringArguments { get; }
 
-        // This will ignore integer parameters, which might map to an enum value.
-        public IEnumerable<T> GetEnumArgumentsOfType<T>() where T : struct =>
+        // By only trying to parse the StringArguments to the enum,
+        // this will ignore integer parameters which could map to an enum value.
+        public IEnumerable<T> EnumArgumentsOfType<T>() where T : struct =>
             StringArguments.Where(a => Enum.TryParse(a, true, out T _))
                 .Select(a => (T)Enum.Parse(typeof(T), a, true));
 

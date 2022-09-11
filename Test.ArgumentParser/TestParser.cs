@@ -14,7 +14,7 @@ public class TestParser
         Assert.Single(parser.IntegerArguments);
         Assert.Empty(parser.DecimalArguments);
         Assert.Single(parser.StringArguments);
-        Assert.Single(parser.GetEnumArgumentsOfType<EmployeeType>());
+        Assert.Single(parser.EnumArgumentsOfType<EmployeeType>());
     }
 
     [Fact]
@@ -28,6 +28,6 @@ public class TestParser
         Assert.Equal(3, parser.IntegerArguments.Count);
         Assert.Single(parser.DecimalArguments);
         Assert.Equal(2, parser.StringArguments.Count);
-        Assert.Single(parser.GetEnumArgumentsOfType<EmployeeType>());
+        Assert.Single(parser.EnumArgumentsOfType<EmployeeType>());
     }
 }
