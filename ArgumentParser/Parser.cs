@@ -19,25 +19,28 @@ namespace ArgumentParser
 
         public Parser(string arguments, char[] separators)
         {
+            // Initial split of arguments
             Arguments = 
                 arguments.Split(separators, 
                     StringSplitOptions.RemoveEmptyEntries)
                     .ToList();
 
+            // Find arguments that are integers or decimals
             IEnumerable<string> integerArgumentsAsStrings = 
                 Arguments
                     .Where(a => int.TryParse(a, out _))
                     .ToList();
 
-            IntegerArguments =
-                integerArgumentsAsStrings
-                    .Select(int.Parse)
-                    .ToList();
-
-            IEnumerable<string> decimalArgumentsAsStrings = 
+            IEnumerable<string> decimalArgumentsAsStrings =
                 Arguments
                     .Except(integerArgumentsAsStrings)
                     .Where(a => decimal.TryParse(a, out _))
+                    .ToList();
+
+            // Populate properties with arguments by datatype
+            IntegerArguments =
+                integerArgumentsAsStrings
+                    .Select(int.Parse)
                     .ToList();
 
             DecimalArguments =
