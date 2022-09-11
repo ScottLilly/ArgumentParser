@@ -27,10 +27,10 @@ public class TestParser
             new Parser(new[] { ',', ' ' });
 
         var parsedArguments =
-            parser.Parse("abc,1, 2, 3,  ,MARKETING, , , 123.45");
+            parser.Parse("abc,1, 2, 3 4,  ,MARKETING, , , 123.45");
 
-        Assert.Equal(6, parsedArguments.Arguments.Count);
-        Assert.Equal(3, parsedArguments.IntegerArguments.Count);
+        Assert.Equal(7, parsedArguments.Arguments.Count);
+        Assert.Equal(4, parsedArguments.IntegerArguments.Count);
         Assert.Single(parsedArguments.DecimalArguments);
         Assert.Equal(2, parsedArguments.StringArguments.Count);
         Assert.Single(parsedArguments.EnumArgumentsOfType<EmployeeType>());
