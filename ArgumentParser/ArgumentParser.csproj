@@ -2,6 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>ScottLilly.$(AssemblyName)</PackageId>
+    <Title>Argument Parser</Title>
+    <Authors>Scott Lilly</Authors>
+    <Description>Package to easily parse parameters from a string, as is often done when running command line applications.</Description>
+    <Copyright>2023, Scott Lilly</Copyright>
+    <RepositoryUrl>https://github.com/ScottLilly/ArgumentParser</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageOutputPath></PackageOutputPath>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
