@@ -5,22 +5,30 @@ namespace ArgumentParser
 {
     public class Parser
     {
-        private readonly char[] _separators;
+        private readonly char[] _argSeparators;
+        private readonly char[] _keyValueSeparators;
 
-        public Parser() : this(new[] { ' ' })
+        public Parser() : 
+            this(new[] { ' ' }, new[] { ':' })
         {
         }
 
-        public Parser(char[] separators)
+        public Parser(char[] argSeparators) :
+            this(argSeparators, new[] { ':' })
         {
-            _separators = separators;
+        }
+
+        public Parser(char[] argSeparators, char[] keyValueSeparators)
+        {
+            _argSeparators = argSeparators;
+            _keyValueSeparators = keyValueSeparators;
         }
 
         public ParsedArguments Parse(string arguments)
         {
             // Initial split of arguments
             var splitArguments =
-                arguments.Split(_separators,
+                arguments.Split(_argSeparators,
                         StringSplitOptions.RemoveEmptyEntries)
                     .ToList();
 
@@ -49,16 +57,25 @@ namespace ArgumentParser
 
             var stringArguments =
                 splitArguments
+                    .Where(a => !a.Contains(_keyValueSeparators))
                     .Except(integerArgumentsAsStrings)
                     .Except(decimalArgumentsAsStrings)
                     .ToList();
+
+            var namedArguments =
+                splitArguments
+                    .Where(a => a.Contains(_keyValueSeparators[0]))
+                    .Select(a => a.Split(_keyValueSeparators, 2))
+                    .Where(a => a.Length == 2)
+                    .ToDictionary(a => a[0], a => a[1]);
 
             return new 
                 ParsedArguments(
                     splitArguments,
                     integerArguments,
                     decimalArguments, 
-                    stringArguments);
+                    stringArguments,
+                    namedArguments);
         }
     }
 }
