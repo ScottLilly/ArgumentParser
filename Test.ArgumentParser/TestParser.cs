@@ -43,16 +43,17 @@ public class TestParser
             new Parser();
 
         var parsedArguments =
-            parser.Parse("sales:1 --mode:test");
+            parser.Parse("sales:1 --mode:test db=MyDb");
 
-        Assert.Equal(2, parsedArguments.Arguments.Count);
+        Assert.Equal(3, parsedArguments.Arguments.Count);
         Assert.Empty(parsedArguments.IntegerArguments);
         Assert.Empty(parsedArguments.DecimalArguments);
         Assert.Empty(parsedArguments.StringArguments);
         Assert.Empty(parsedArguments.EnumArgumentsOfType<EmployeeType>());
 
-        Assert.Equal(2, parsedArguments.NamedArguments.Count);
+        Assert.Equal(3, parsedArguments.NamedArguments.Count);
         Assert.Equal("1", parsedArguments.NamedArguments["sales"]);
         Assert.Equal("test", parsedArguments.NamedArguments["--mode"]);
+        Assert.Equal("MyDb", parsedArguments.NamedArguments["db"]);
     }
 }
