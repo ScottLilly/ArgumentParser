@@ -10,7 +10,7 @@
     <Copyright>2023, Scott Lilly</Copyright>
     <RepositoryUrl>https://github.com/ScottLilly/ArgumentParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageOutputPath>\Utilities\PrivateNuGet</PackageOutputPath>
+    <PackageOutputPath></PackageOutputPath>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
 
