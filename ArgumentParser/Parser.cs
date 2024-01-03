@@ -28,18 +28,14 @@ namespace ArgumentParser
             _keyValueSeparators = keyValueSeparators;
         }
 
-        public ParsedArguments Parse(string arguments)
+        public ParsedArguments Parse(string[] args)
         {
-            var splitArguments = 
-                arguments.Split(_argSeparators.ToArray(), 
-                    StringSplitOptions.RemoveEmptyEntries);
-
             var integerArguments = new List<int>();
             var decimalArguments = new List<decimal>();
             var stringArguments = new List<string>();
             var namedArguments = new Dictionary<string, string>();
 
-            foreach (var arg in splitArguments)
+            foreach (var arg in args)
             {
                 if (TryParseNamedArgument(arg, out var key, out var value))
                 {
@@ -60,11 +56,19 @@ namespace ArgumentParser
             }
 
             return new ParsedArguments(
-                splitArguments.ToList(),
+                args.ToList(),
                 integerArguments,
                 decimalArguments,
                 stringArguments,
                 namedArguments);
+        }
+
+        public ParsedArguments Parse(string arguments)
+        {
+            return Parse(
+                arguments.Split(
+                    _argSeparators.ToArray(), 
+                    StringSplitOptions.RemoveEmptyEntries));
         }
 
         private bool TryParseNamedArgument(string argument, out string key, out string value)
@@ -73,11 +77,14 @@ namespace ArgumentParser
             {
                 if (argument.Contains(separator))
                 {
-                    var parts = argument.Split(new[] { separator }, 2, StringSplitOptions.None);
+                    var parts = 
+                        argument.Split(new[] { separator }, 2, StringSplitOptions.None);
+
                     if (parts.Length == 2)
                     {
                         key = parts[0];
                         value = parts[1];
+
                         return true;
                     }
                 }
@@ -85,6 +92,7 @@ namespace ArgumentParser
 
             key = null;
             value = null;
+
             return false;
         }
     }
