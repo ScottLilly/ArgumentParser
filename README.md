@@ -1,16 +1,16 @@
 # ArgumentParser
 
-Parses a string, or list of strings, into a ParsedArguments object that is easier to use.
+Parses a string, or list of strings, into a ParsedArguments object that exposes the arguments in lists of integer, decimal, string, enum, or key/value pairs.
 
 This was originally written to parse chat messages from Twitch chat.
 I wrote a Twitch bot that played a game where chatters managed a business [MegaCorpClash](https://github.com/ScottLilly/MegaCorpClash).
 One thing they could do was hire employees.
-For example, to hire five managers, they would type:
+For example, to hire five marketing employees, they would type:
 ```
-!hire manager 5"
+"!hire marketing 5"
 ```
 
-I wanted a way to search for words in the chat message that matched a value from the EmployeeType enum and find the integer value from the chat message, to determine how many managers to hire:
+I wanted a way to search for words in the chat message that matched a value from the EmployeeType enum and find the integer value from the chat message, to determine how many marketing employees to hire:
 ```
 public enum EmployeeType
 {
@@ -31,7 +31,7 @@ public enum EmployeeType
 
 So, you could write code like this:
 ```
-var chatMessage = "sales 1"; // This would be the message from Twitch chat
+var chatMessage = "sales 1"; // This would be the message text from Twitch chat command
 
 var parser = new Parser();
 var parsedArguments = parser.Parse(chatMessage);
