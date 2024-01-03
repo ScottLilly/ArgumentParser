@@ -17,6 +17,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageReleaseNotes>Initial release</PackageReleaseNotes>
     <PackageTags>arguments; parser; cli; command line</PackageTags>
+    <Version>1.0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
