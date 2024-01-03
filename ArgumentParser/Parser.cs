@@ -6,26 +6,16 @@ namespace ArgumentParser
 {
     public class Parser
     {
-        private static readonly char[] DEFAULT_ARG_SEPARATORS = new[] { ' ' };
-        private static readonly char[] DEFAULT_KEY_VALUE_SEPARATORS = new[] { ':', '=' };
+        private static readonly char[] _defaultArgSeparators = { ' ' };
+        private static readonly char[] _defaultKeyValueSeparators = { ':', '=' };
 
-        private readonly IEnumerable<char> _argSeparators = new[] { ' ' };
-        private readonly IEnumerable<char> _keyValueSeparators = new[] { ':', '=' };
+        private readonly char[] _argSeparators;
+        private readonly char[] _keyValueSeparators;
 
-        public Parser() :
-            this(DEFAULT_ARG_SEPARATORS, DEFAULT_KEY_VALUE_SEPARATORS)
+        public Parser(char[] argSeparators = null, char[] keyValueSeparators = null)
         {
-        }
-
-        public Parser(IEnumerable<char> argSeparators) :
-            this(argSeparators, DEFAULT_KEY_VALUE_SEPARATORS)
-        {
-        }
-
-        public Parser(IEnumerable<char> argSeparators, IEnumerable<char> keyValueSeparators)
-        {
-            _argSeparators = argSeparators;
-            _keyValueSeparators = keyValueSeparators;
+            _argSeparators = argSeparators ?? _defaultArgSeparators;
+            _keyValueSeparators = keyValueSeparators ?? _defaultKeyValueSeparators;
         }
 
         public ParsedArguments Parse(string[] args)
@@ -41,11 +31,11 @@ namespace ArgumentParser
                 {
                     namedArguments[key] = value;
                 }
-                else if (int.TryParse(arg, out int intVal))
+                else if (int.TryParse(arg, out var intVal))
                 {
                     integerArguments.Add(intVal);
                 }
-                else if (decimal.TryParse(arg, out decimal decimalVal))
+                else if (decimal.TryParse(arg, out var decimalVal))
                 {
                     decimalArguments.Add(decimalVal);
                 }
@@ -56,38 +46,28 @@ namespace ArgumentParser
             }
 
             return new ParsedArguments(
-                args.ToList(),
-                integerArguments,
-                decimalArguments,
-                stringArguments,
+                args.ToList(), 
+                integerArguments, 
+                decimalArguments, 
+                stringArguments, 
                 namedArguments);
         }
 
         public ParsedArguments Parse(string arguments)
         {
-            return Parse(
-                arguments.Split(
-                    _argSeparators.ToArray(), 
-                    StringSplitOptions.RemoveEmptyEntries));
+            return Parse(arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries));
         }
 
         private bool TryParseNamedArgument(string argument, out string key, out string value)
         {
-            foreach (var separator in _keyValueSeparators)
+            var separatorIndex = argument.IndexOfAny(_keyValueSeparators);
+
+            if (separatorIndex >= 0)
             {
-                if (argument.Contains(separator))
-                {
-                    var parts = 
-                        argument.Split(new[] { separator }, 2, StringSplitOptions.None);
+                key = argument.Substring(0, separatorIndex);
+                value = argument.Substring(separatorIndex + 1);
 
-                    if (parts.Length == 2)
-                    {
-                        key = parts[0];
-                        value = parts[1];
-
-                        return true;
-                    }
-                }
+                return true;
             }
 
             key = null;

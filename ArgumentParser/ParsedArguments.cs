@@ -8,11 +8,9 @@ namespace ArgumentParser
     public class ParsedArguments
     {
         public ReadOnlyCollection<string> Arguments { get; }
-
         public ReadOnlyCollection<int> IntegerArguments { get; }
         public ReadOnlyCollection<decimal> DecimalArguments { get; }
         public ReadOnlyCollection<string> StringArguments { get; }
-
         public ReadOnlyDictionary<string, string> NamedArguments { get; }
 
         // By only trying to parse the StringArguments to the enum,
