@@ -6,16 +6,33 @@
     <PackageId>ScottLilly.$(AssemblyName)</PackageId>
     <Title>Argument Parser</Title>
     <Authors>Scott Lilly</Authors>
-    <Description>Package to easily parse parameters from a string, as is often done when running command line applications.</Description>
+    <Description>Package to easily parse parameters from a string, or list of strings, as is often done when running command line applications.</Description>
     <Copyright>2023, Scott Lilly</Copyright>
     <RepositoryUrl>https://github.com/ScottLilly/ArgumentParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageOutputPath></PackageOutputPath>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/ScottLilly/ArgumentParser</PackageProjectUrl>
+    <PackageIcon>logo_128.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <PackageTags>arguments; parser; cli; command line</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\LICENSE.txt">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="logo_128.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
