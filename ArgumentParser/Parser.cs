@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace ArgumentParser
 {
@@ -10,13 +12,14 @@ namespace ArgumentParser
     {
         #region Private variables
 
-        private static readonly char[] _defaultArgSeparators = { ' ' };
-        private static readonly char[] _defaultKeyValueSeparators = { ':', '=' };
-        private static readonly string[] _defaultStringArgSeparators = { " " };
-        private readonly string[] _stringArgSeparators;
+        // "Constants" for default argument and key/value separators
+        private static readonly ReadOnlyCollection<string> s_defaultArgSeparators =
+            new ReadOnlyCollection<string>(new string[] { " " });
+        private static readonly ReadOnlyCollection<string> s_defaultKeyValueSeparators =
+            new ReadOnlyCollection<string>(new string[] { ":", "=" });
 
-        private readonly char[] _argSeparators;
-        private readonly char[] _keyValueSeparators;
+        private readonly string[] _argSeparators;
+        private readonly string[] _keyValueSeparators;
 
         #endregion
 
@@ -29,8 +32,13 @@ namespace ArgumentParser
         /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
         public Parser(char[] argSeparators = null, char[] keyValueSeparators = null)
         {
-            _argSeparators = argSeparators ?? _defaultArgSeparators;
-            _keyValueSeparators = keyValueSeparators ?? _defaultKeyValueSeparators;
+            _argSeparators =
+                argSeparators?.Select(c => c.ToString()).ToArray()
+                ?? s_defaultArgSeparators.ToArray();
+
+            _keyValueSeparators =
+                keyValueSeparators?.Select(c => c.ToString()).ToArray()
+                ?? s_defaultKeyValueSeparators.ToArray();
         }
 
         /// <summary>
@@ -38,10 +46,15 @@ namespace ArgumentParser
         /// </summary>
         /// <param name="argSeparators">(Optional) array of strings that indicate a separator between arguments. Default value is { " " }</param>
         /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
-        public Parser(string[] stringArgSeparators, char[] keyValueSeparators = null)
+        public Parser(string[] argSeparators, char[] keyValueSeparators = null)
         {
-            _stringArgSeparators = stringArgSeparators ?? _defaultStringArgSeparators;
-            _keyValueSeparators = keyValueSeparators ?? _defaultKeyValueSeparators;
+            _argSeparators =
+                argSeparators
+                ?? s_defaultArgSeparators.ToArray();
+
+            _keyValueSeparators =
+                keyValueSeparators?.Select(c => c.ToString()).ToArray()
+                ?? s_defaultKeyValueSeparators.ToArray();
         }
 
         #endregion
@@ -81,10 +94,10 @@ namespace ArgumentParser
             }
 
             return new ParsedArguments(
-                args, 
-                integerArguments, 
-                decimalArguments, 
-                stringArguments, 
+                args,
+                integerArguments,
+                decimalArguments,
+                stringArguments,
                 namedArguments);
         }
 
@@ -95,11 +108,7 @@ namespace ArgumentParser
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
         public ParsedArguments Parse(string arguments)
         {
-            // Split the string into an array of arguments.
-            string[] splitArgs = _stringArgSeparators != null
-                ? arguments.Split(_stringArgSeparators, StringSplitOptions.RemoveEmptyEntries)
-                : arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
-
+            string[] splitArgs = arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
             return Parse(splitArgs);
         }
 
@@ -107,25 +116,26 @@ namespace ArgumentParser
 
         #region Private Methods
 
-        private bool TryParseNamedArgument(string argument, 
+        private bool TryParseNamedArgument(string argument,
             out KeyValuePair<string, string> namedArgument)
         {
-            int separatorIndex = argument.IndexOfAny(_keyValueSeparators);
+            namedArgument = default;
 
-            // No separator found, or was found in the first position,
-            // so this is not a named argument.
-            if (separatorIndex < 1)
+            foreach (var separator in _keyValueSeparators)
             {
-                return false;
+                int separatorIndex = argument.IndexOf(separator, StringComparison.Ordinal);
+
+                if (separatorIndex >= 1)
+                {
+                    namedArgument = new KeyValuePair<string, string>(
+                        argument.Substring(0, separatorIndex),
+                        argument.Substring(separatorIndex + separator.Length).Trim());
+
+                    return true;
+                }
             }
 
-            // Split the argument into key and value parts.
-            namedArgument =
-                new KeyValuePair<string, string>(
-                    argument.Substring(0, separatorIndex),
-                    argument.Substring(separatorIndex + 1));
-
-            return true;
+            return false;
         }
 
         #endregion
