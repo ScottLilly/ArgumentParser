@@ -17,7 +17,7 @@
     <PackageProjectUrl>https://github.com/ScottLilly/ArgumentParser</PackageProjectUrl>
     <PackageIcon>logo_128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Added ability to use multi-character strings to indicate arguments. Refactored and improved code. Added unit tests. Added XML documentation.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added ability to use multi-character strings to indicate arguments. Added fluent interface to build and use parser. Refactored and improved code. Added unit tests. Added XML documentation.</PackageReleaseNotes>
     <PackageTags>arguments; parser; cli; command line</PackageTags>
     <Version>1.1.0.0</Version>
   </PropertyGroup>
