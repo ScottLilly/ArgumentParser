@@ -9,7 +9,7 @@
     <Title>Argument Parser</Title>
     <Authors>Scott Lilly</Authors>
     <Description>Package to easily parse individual parameters from a string, or array of strings, as is often done when running command line applications.</Description>
-    <Copyright>2023, Scott Lilly</Copyright>
+    <Copyright>2023-2025, Scott Lilly</Copyright>
     <RepositoryUrl>https://github.com/ScottLilly/ArgumentParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageOutputPath></PackageOutputPath>
@@ -17,9 +17,9 @@
     <PackageProjectUrl>https://github.com/ScottLilly/ArgumentParser</PackageProjectUrl>
     <PackageIcon>logo_128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Added ability to use multi-character strings to indicate arguments. Added fluent interface to build and use parser. Refactored and improved code. Added unit tests. Added XML documentation.</PackageReleaseNotes>
+    <PackageReleaseNotes>Fix issue with command line key/value arguments, which were already split in app's static Main method.</PackageReleaseNotes>
     <PackageTags>arguments; parser; cli; command line</PackageTags>
-    <Version>1.1.0.0</Version>
+    <Version>1.1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

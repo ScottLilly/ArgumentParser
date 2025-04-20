@@ -68,22 +68,44 @@ namespace ArgumentParser
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
         public ParsedArguments Parse(string[] args)
         {
-            var integerArguments = new List<int>();
-            var decimalArguments = new List<decimal>();
-            var stringArguments = new List<string>();
-            var namedArguments = new Dictionary<string, string>();
+            // Concatenate the array of strings into a single string,
+            // before passing to the Parse method that accepts a single string parameter.
+            // This is to handle command line arguments that may be intended as key/value pairs,
+            // but have already been split into an array by a console app's static Main method.
+            return Parse(string.Join(" ", args));
+        }
 
-            foreach (var arg in args)
+        /// <summary>
+        /// Parses a single string of arguments into a ParsedArguments object.
+        /// </summary>
+        /// <param name="arguments">String containing arguments to parse</param>
+        /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
+        public ParsedArguments Parse(string arguments)
+        {
+            string[] splitArgs = 
+                arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
+
+            List<int> integerArguments = new List<int>();
+            List<decimal> decimalArguments = new List<decimal>();
+            List<string> stringArguments = new List<string>();
+            Dictionary<string, string> namedArguments = new Dictionary<string, string>();
+
+            string[] args = splitArgs
+                .Select(arg => arg.Trim())
+                .Where(arg => !string.IsNullOrEmpty(arg))
+                .ToArray();
+
+            foreach (string arg in args)
             {
                 if (TryParseNamedArgument(arg, out KeyValuePair<string, string> namedArgument))
                 {
                     namedArguments[namedArgument.Key] = namedArgument.Value;
                 }
-                else if (int.TryParse(arg, out var intVal))
+                else if (int.TryParse(arg, out int intVal))
                 {
                     integerArguments.Add(intVal);
                 }
-                else if (decimal.TryParse(arg, out var decimalVal))
+                else if (decimal.TryParse(arg, out decimal decimalVal))
                 {
                     decimalArguments.Add(decimalVal);
                 }
@@ -101,17 +123,6 @@ namespace ArgumentParser
                 namedArguments);
         }
 
-        /// <summary>
-        /// Parses a single string of arguments into a ParsedArguments object.
-        /// </summary>
-        /// <param name="arguments">String containing arguments to parse</param>
-        /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
-        public ParsedArguments Parse(string arguments)
-        {
-            string[] splitArgs = arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
-            return Parse(splitArgs);
-        }
-
         #endregion
 
         #region Private Methods
@@ -121,7 +132,7 @@ namespace ArgumentParser
         {
             namedArgument = default;
 
-            foreach (var separator in _keyValueSeparators)
+            foreach (string separator in _keyValueSeparators)
             {
                 int separatorIndex = argument.IndexOf(separator, StringComparison.Ordinal);
 
