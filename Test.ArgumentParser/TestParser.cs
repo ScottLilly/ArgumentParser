@@ -132,4 +132,29 @@ public class TestParser
         Assert.Empty(parsedArguments.NamedArguments);
         Assert.Equal("=1", parsedArguments.Arguments[0]);
     }
+
+    [Fact]
+    public void Test_ParsingStringArray()
+    {
+        string[] args = new string[]
+        {
+            @"--solution",
+            @"c:\test.sln",
+            @"-s",
+            @"c:\test2.sln",
+        };
+
+        var parser = FluentArgumentParser.Create()
+            .AddArgumentSeparators(new string[] { "--", "-" })
+            .AddKeyValueSeparator(' ');
+
+        var parsedArguments = parser.Parse(args);
+
+        Assert.Empty(parsedArguments.IntegerArguments);
+        Assert.Empty(parsedArguments.DecimalArguments);
+        Assert.Equal(2, parsedArguments.Arguments.Count);
+        Assert.Equal(2, parsedArguments.NamedArguments.Count);
+        Assert.Equal(@"c:\test.sln", parsedArguments.NamedArguments["solution"]);
+        Assert.Equal(@"c:\test2.sln", parsedArguments.NamedArguments["s"]);
+    }
 }
