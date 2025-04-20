@@ -56,6 +56,36 @@ Assert.Equal(3, parsedArguments.StringArguments.Count);
 Assert.Equal(3, parsedArguments.EnumArgumentsOfType<EmployeeType>().Count());
 ```
 
+### Use fluent interface to parse arguments
+```
+ParsedArguments parsedArguments =
+    FluentArgumentParser
+    .Create()
+    .AddArgumentSeparators(new string[] { "--", "-" })
+    .AddKeyValueSeparators(new char[] { ':', '|' })
+    .Parse(@"--solution:value1 -s|value2");
+
+Assert.Equal(2, parsedArguments.Arguments.Count);
+Assert.Equal("value1", parsedArguments.NamedArguments["solution"]);
+Assert.Equal("value2", parsedArguments.NamedArguments["s"]);
+```
+
+### Use fluent interface to initialize parser, then parse arguments
+```
+var initializedParser = 
+    FluentArgumentParser
+    .Create()
+    .AddArgumentSeparators(new string[] { "--", "-" })
+    .AddKeyValueSeparators(new char[] { ':', '|' });
+
+ParsedArguments parsedArguments =
+    initializedParser.Parse(@"--solution:value1 -s|value2");
+
+Assert.Equal(2, parsedArguments.Arguments.Count);
+Assert.Equal("value1", parsedArguments.NamedArguments["solution"]);
+Assert.Equal("value2", parsedArguments.NamedArguments["s"]);
+```
+
 ## Requirements
 - .NET Standard 2.0 or higher
 - No external dependencies.
