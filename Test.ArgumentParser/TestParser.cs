@@ -86,6 +86,21 @@ public class TestParser
             parser.Parse(@"--solution c:\App1\App1.sln -s c:\App2\App2.sln");
 
         Assert.Equal(2, parsedArguments.Arguments.Count);
+        Assert.Equal(@"c:\App1\App1.sln", parsedArguments.NamedArguments["solution"]);
+        Assert.Equal(@"c:\App2\App2.sln", parsedArguments.NamedArguments["s"]);
+    }
+
+    [Fact]
+    public void Test_NamedArgumentsWithStringSeparators2()
+    {
+        var parser = new Parser(new string[] { "--", "-" }, new char[] { ':' });
+
+        var parsedArguments =
+            parser.Parse(@"--solution:c:\App1\App1.sln -s:c:\App2\App2.sln");
+
+        Assert.Equal(2, parsedArguments.Arguments.Count);
+        Assert.Equal(@"c:\App1\App1.sln", parsedArguments.NamedArguments["solution"]);
+        Assert.Equal(@"c:\App2\App2.sln", parsedArguments.NamedArguments["s"]);
     }
 
     [Fact]
