@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<IncludeSymbols>true</IncludeSymbols>
+	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <PackageId>ScottLilly.$(AssemblyName)</PackageId>
     <Title>Argument Parser</Title>
     <Authors>Scott Lilly</Authors>
@@ -39,4 +41,8 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+  </ItemGroup>
+	
 </Project>
