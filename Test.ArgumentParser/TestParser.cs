@@ -64,4 +64,20 @@ public class TestParser
 
         Assert.Equal(2, parsedArguments.Arguments.Count);
     }
+
+    [Fact]
+    public void Test_KeyValueSeparatorInFirstPosition()
+    {
+        var parser = new Parser(new[] { ' ' }, new[] { '=' });
+
+        var parsedArguments = parser.Parse("=1");
+
+        Assert.Single(parsedArguments.Arguments);
+        Assert.Empty(parsedArguments.IntegerArguments);
+        Assert.Empty(parsedArguments.DecimalArguments);
+        Assert.Single(parsedArguments.StringArguments);
+        Assert.Empty(parsedArguments.EnumArgumentsOfType<EmployeeType>());
+        Assert.Empty(parsedArguments.NamedArguments);
+        Assert.Equal("=1", parsedArguments.Arguments[0]);
+    }
 }

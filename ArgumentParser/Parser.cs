@@ -36,13 +36,17 @@ namespace ArgumentParser
 
         #region Public Methods
 
+        /// <summary>
+        /// Parses a string of arguments into a ParsedArguments object.
+        /// </summary>
+        /// <param name="args">Array of string arguments to parse</param>
+        /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
         public ParsedArguments Parse(string[] args)
         {
             var integerArguments = new List<int>();
             var decimalArguments = new List<decimal>();
             var stringArguments = new List<string>();
             var namedArguments = new Dictionary<string, string>();
-            var flags = new List<string>();
 
             foreach (var arg in args)
             {
@@ -72,18 +76,16 @@ namespace ArgumentParser
                 namedArguments);
         }
 
+        /// <summary>
+        /// Parses a string of arguments into a ParsedArguments object.
+        /// </summary>
+        /// <param name="arguments">String containing arguments to parse</param>
+        /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
         public ParsedArguments Parse(string arguments)
         {
-            string[] splitArgs;
-
-            if (_stringArgSeparators != null)
-            {
-                splitArgs = SplitByStringSeparators(arguments, _stringArgSeparators);
-            }
-            else
-            {
-                splitArgs = arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
-            }
+            string[] splitArgs = _stringArgSeparators != null
+                ? arguments.Split(_stringArgSeparators, StringSplitOptions.RemoveEmptyEntries)
+                : arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
 
             return Parse(splitArgs);
         }
@@ -92,26 +94,25 @@ namespace ArgumentParser
 
         #region Private Methods
 
-        private bool TryParseNamedArgument(string argument, out KeyValuePair<string, string> namedArgument)
+        private bool TryParseNamedArgument(string argument, 
+            out KeyValuePair<string, string> namedArgument)
         {
             int separatorIndex = argument.IndexOfAny(_keyValueSeparators);
 
-            if (separatorIndex >= 0)
+            // No separator found, or was found in the first position,
+            // so this is not a named argument.
+            if (separatorIndex < 1)
             {
-                string key = argument.Substring(0, separatorIndex);
-                string value = argument.Substring(separatorIndex + 1);
-
-                namedArgument = new KeyValuePair<string, string>(key, value);
-
-                return true;
+                return false;
             }
 
-            return false;
-        }
+            // Split the argument into key and value parts.
+            namedArgument =
+                new KeyValuePair<string, string>(
+                    argument.Substring(0, separatorIndex),
+                    argument.Substring(separatorIndex + 1));
 
-        private string[] SplitByStringSeparators(string input, string[] separators)
-        {
-            return input.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+            return true;
         }
 
         #endregion
