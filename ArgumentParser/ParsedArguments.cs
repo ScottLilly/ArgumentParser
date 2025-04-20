@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace ArgumentParser
 {
+    /// <summary>
+    /// The parsed arguments from string, or string aray, input.
+    /// </summary>
     public class ParsedArguments
     {
         /// <summary>
@@ -43,7 +46,7 @@ namespace ArgumentParser
             StringArguments.Where(a => Enum.TryParse(a, true, out T _))
                 .Select(a => (T)Enum.Parse(typeof(T), a, true));
 
-        public ParsedArguments(
+        internal ParsedArguments(
             IEnumerable<string> arguments,
             IEnumerable<int> integerArguments,
             IEnumerable<decimal> decimalArguments,

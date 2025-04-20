@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ArgumentParser
 {
+    /// <summary>
+    /// Parser class for parsing command line arguments into a structured format.
+    /// </summary>
     public class Parser
     {
         #region Private variables
@@ -20,12 +22,22 @@ namespace ArgumentParser
 
         #region Constructors
 
+        /// <summary>
+        /// Initializes a new instance of the Parser class with default argument and key/value separators.
+        /// </summary>
+        /// <param name="argSeparators">(Optional) array of characters that indicate a separator between arguments. Default value is { ' ' }</param>
+        /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
         public Parser(char[] argSeparators = null, char[] keyValueSeparators = null)
         {
             _argSeparators = argSeparators ?? _defaultArgSeparators;
             _keyValueSeparators = keyValueSeparators ?? _defaultKeyValueSeparators;
         }
 
+        /// <summary>
+        /// Initializes a new instance of the Parser class with default argument and key/value separators.
+        /// </summary>
+        /// <param name="argSeparators">(Optional) array of strings that indicate a separator between arguments. Default value is { " " }</param>
+        /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
         public Parser(string[] stringArgSeparators, char[] keyValueSeparators = null)
         {
             _stringArgSeparators = stringArgSeparators ?? _defaultStringArgSeparators;
@@ -37,7 +49,7 @@ namespace ArgumentParser
         #region Public Methods
 
         /// <summary>
-        /// Parses a string of arguments into a ParsedArguments object.
+        /// Parses an array of string arguments into a ParsedArguments object.
         /// </summary>
         /// <param name="args">Array of string arguments to parse</param>
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
@@ -69,7 +81,7 @@ namespace ArgumentParser
             }
 
             return new ParsedArguments(
-                args.ToList(), 
+                args, 
                 integerArguments, 
                 decimalArguments, 
                 stringArguments, 
@@ -77,12 +89,13 @@ namespace ArgumentParser
         }
 
         /// <summary>
-        /// Parses a string of arguments into a ParsedArguments object.
+        /// Parses a single string of arguments into a ParsedArguments object.
         /// </summary>
         /// <param name="arguments">String containing arguments to parse</param>
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
         public ParsedArguments Parse(string arguments)
         {
+            // Split the string into an array of arguments.
             string[] splitArgs = _stringArgSeparators != null
                 ? arguments.Split(_stringArgSeparators, StringSplitOptions.RemoveEmptyEntries)
                 : arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);

@@ -4,6 +4,14 @@ namespace Test.ArgumentParser;
 
 public class TestParser
 {
+    // Used for testing enum parsing
+    public enum EmployeeType
+    {
+        Production,
+        Sales,
+        Marketing,
+    }
+
     [Fact]
     public void Test_DefaultSeparators()
     {
@@ -55,7 +63,22 @@ public class TestParser
     }
 
     [Fact]
-    public void Test_NamedArgumentsByString()
+    public void Test_EnumParsing()
+    {
+        var parser = new Parser();
+
+        var parsedArguments =
+            parser.Parse("production sales marketing");
+
+        Assert.Equal(3, parsedArguments.Arguments.Count);
+        Assert.Empty(parsedArguments.IntegerArguments);
+        Assert.Empty(parsedArguments.DecimalArguments);
+        Assert.Equal(3, parsedArguments.StringArguments.Count);
+        Assert.Equal(3, parsedArguments.EnumArgumentsOfType<EmployeeType>().Count());
+    }
+
+    [Fact]
+    public void Test_NamedArgumentsWithStringSeparators()
     {
         var parser = new Parser(new string[] { "--", "-" }, new char[] { ' ' });
 
@@ -63,6 +86,20 @@ public class TestParser
             parser.Parse(@"--solution c:\App1\App1.sln -s c:\App2\App2.sln");
 
         Assert.Equal(2, parsedArguments.Arguments.Count);
+    }
+
+    [Fact]
+    public void Test_ArgumentVariety()
+    {
+        var parser = new Parser();
+
+        var parsedArguments = parser.Parse("123 45.67 hello world --key=value");
+
+        Assert.Equal(5, parsedArguments.Arguments.Count);
+        Assert.Equal(1, parsedArguments.IntegerArguments.Count);
+        Assert.Equal(1, parsedArguments.DecimalArguments.Count);
+        Assert.Equal(2, parsedArguments.StringArguments.Count);
+        Assert.Equal(1, parsedArguments.NamedArguments.Count);
     }
 
     [Fact]

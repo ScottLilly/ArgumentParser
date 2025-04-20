@@ -1,49 +1,68 @@
-# ArgumentParser
+# ScottLilly.ArgumentParser
+A lightweight C# NuGet package for parsing a string, or array of strings (such as command-line arguments) into a ParsedArguments object. It categorizes arguments into their types, including all arguments, integers, decimals, strings, named key/value pairs, and enum-based arguments.
 
-Parses a string, or list of strings, into a ParsedArguments object that exposes the arguments in lists of integer, decimal, string, enum, or key/value pairs.
+## Installation
+Install the package via NuGet Package Manager or use the following command in the Package Manager Console:
 
-This was originally written to parse chat messages from Twitch chat.
-I wrote a Twitch bot that played a game where chatters managed a business [MegaCorpClash](https://github.com/ScottLilly/MegaCorpClash).
-One thing they could do was hire employees.
-For example, to hire five marketing employees, they would type:
 ```
-"!hire marketing 5"
+Install-Package ScottLilly.ArgumentParser
+```
+Or via the .NET CLI:
+```
+dotnet add package ScottLilly.ArgumentParser
 ```
 
-I wanted a way to search for words in the chat message that matched a value from the EmployeeType enum and find the integer value from the chat message, to determine how many marketing employees to hire:
+## Features
+Instantiate a `Parser` object to parse strings or arrays of strings into a `ParsedArguments` object. 
+Pass the optional array of characters or strings to use to separate arguments in the string and/or to separate key/value pair arguments.
+
+## How to use
+Code samples:
+
+### Parse a string with various argument types
+```
+var parser = new Parser();
+
+var parsedArguments = parser.Parse("123 45.67 hello world --key=value");
+
+Assert.Equal(5, parsedArguments.Arguments.Count);
+Assert.Equal(1, parsedArguments.IntegerArguments.Count);
+Assert.Equal(1, parsedArguments.DecimalArguments.Count);
+Assert.Equal(3, parsedArguments.StringArguments.Count);
+Assert.Equal(1, parsedArguments.NamedArguments.Count);
+Assert.Equal("value", parsedArguments.NamedArguments["key"]);
+```
+
+### Parse values that should match an enum type
 ```
 public enum EmployeeType
 {
     Production,
     Sales,
     Marketing,
-    Research,
-    HR,
-    Legal,
-    Security,
-    IT,
-    PR,
-    Spy
 }
-```
-
-## How to use
-
-So, you could write code like this:
-```
-var chatMessage = "sales 1"; // This would be the message text from Twitch chat command
 
 var parser = new Parser();
-var parsedArguments = parser.Parse(chatMessage);
 
-// "hire" message expects an employee type and number of employees
-var employeeType = parsedArguments.GetEnum<EmployeeType>(0);
-var numberOfEmployees = parsedArguments.GetInt(0);
+var parsedArguments =
+    parser.Parse("production sales marketing");
 
-// Do hiring logic here
+Assert.Equal(3, parsedArguments.Arguments.Count);
+Assert.Empty(parsedArguments.IntegerArguments);
+Assert.Empty(parsedArguments.DecimalArguments);
+Assert.Equal(3, parsedArguments.StringArguments.Count);
+Assert.Equal(3, parsedArguments.EnumArgumentsOfType<EmployeeType>().Count());
 ```
 
-That's how this project started.
+## Requirements
+- .NET Standard 2.0 or higher
+- No external dependencies.
 
-Now, I use it in other projects, to parse command-line arguments, and other strings.
-Please let me know if you find any issues, have suggestions, or have an idea for another feature.
+## Contributing
+Contributions are welcome. Please submit issues or pull requests to the GitHub repository.
+
+## License
+This project is licensed under the MIT License. See the [LICENSE file](https://github.com/ScottLilly/ArgumentParser/blob/master/LICENSE.txt) for details.
+
+## Contact
+For questions or feedback, please [open an issue here on GitHub](https://github.com/ScottLilly/ArgumentParser/issues).
