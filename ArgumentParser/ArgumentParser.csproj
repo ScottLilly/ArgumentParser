@@ -6,7 +6,7 @@
     <PackageId>ScottLilly.$(AssemblyName)</PackageId>
     <Title>Argument Parser</Title>
     <Authors>Scott Lilly</Authors>
-    <Description>Package to easily parse parameters from a string, or list of strings, as is often done when running command line applications.</Description>
+    <Description>Package to easily parse individual parameters from a string, or array of strings, as is often done when running command line applications.</Description>
     <Copyright>2023, Scott Lilly</Copyright>
     <RepositoryUrl>https://github.com/ScottLilly/ArgumentParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -15,9 +15,11 @@
     <PackageProjectUrl>https://github.com/ScottLilly/ArgumentParser</PackageProjectUrl>
     <PackageIcon>logo_128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Initial release</PackageReleaseNotes>
+    <PackageReleaseNotes>Added ability to use multi-character strings to indicate arguments. Refactored and improved code. Added unit tests. Added XML documentation.</PackageReleaseNotes>
     <PackageTags>arguments; parser; cli; command line</PackageTags>
     <Version>1.1.0.0</Version>
+	<IncludeSymbols>true</IncludeSymbols>
+	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,6 +39,10 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
