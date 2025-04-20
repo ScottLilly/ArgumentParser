@@ -19,9 +19,12 @@ namespace ArgumentParser
             StringArguments.Where(a => Enum.TryParse(a, true, out T _))
                 .Select(a => (T)Enum.Parse(typeof(T), a, true));
 
-        public ParsedArguments(List<string> arguments, 
-            List<int> integerArguments, List<decimal> decimalArguments, 
-            List<string> stringArguments, Dictionary<string, string> namedArguments)
+        public ParsedArguments(
+            List<string> arguments, 
+            List<int> integerArguments, 
+            List<decimal> decimalArguments, 
+            List<string> stringArguments, 
+            Dictionary<string, string> namedArguments)
         {
             Arguments = arguments.AsReadOnly();
             IntegerArguments = integerArguments.AsReadOnly();
