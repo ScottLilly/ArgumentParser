@@ -1,6 +1,10 @@
 # ScottLilly.ArgumentParser
-A lightweight C# NuGet package for parsing a string, or array of strings (such as command-line arguments) into a ParsedArguments object. It categorizes arguments into their types, including all arguments, integers, decimals, strings, named key/value pairs, and enum-based arguments.
+<img align="left" width="75" height="75" style="color:white" src="https://github.com/ScottLilly/ArgumentParser/blob/master/ArgumentParser/logo_128.png">
+A lightweight C# NuGet package for parsing a string, or array of strings (such as command-line arguments) into a ParsedArguments object.
+<br/><br/>
+It categorizes arguments into their types, including all arguments, integers, decimals, strings, named key/value pairs, and enum-based arguments.
 
+## Project Overview
 ![Build Status](https://github.com/ScottLilly/ArgumentParser/actions/workflows/ci.yml/badge.svg)
 [![NuGet](https://img.shields.io/nuget/v/ScottLilly.ArgumentParser)](https://www.nuget.org/packages/ScottLilly.ArgumentParser/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ScottLilly.ArgumentParser)](https://www.nuget.org/packages/ScottLilly.ArgumentParser/)
