@@ -21,12 +21,11 @@ Or via the .NET CLI:
 dotnet add package ScottLilly.ArgumentParser
 ```
 
-## Features
-Instantiate a `Parser` object to parse strings or arrays of strings into a `ParsedArguments` object. 
-Pass the optional array of characters or strings to use to separate arguments in the string and/or to separate key/value pair arguments.
-
 ## How to use
-Code samples:
+Instantiate a `Parser` object to parse strings or arrays of strings into a `ParsedArguments` object, 
+passing in an optional array of characters or strings to use to separate arguments in the string and/or to separate key/value pair arguments.
+
+### Code samples:
 
 ### Parse a string with various argument types
 ```
