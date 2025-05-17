@@ -1,4 +1,4 @@
-# ScottLilly.ArgumentParser
+# ScottLilly.ArgumentParser (NuGet package)
 <img align="left" width="75" height="75" style="color:white" src="https://github.com/ScottLilly/ArgumentParser/blob/master/ArgumentParser/logo_128.png">
 A lightweight C# NuGet package for parsing a string, or array of strings (such as command-line arguments) into a ParsedArguments object.
 <br/><br/>
