@@ -20,6 +20,7 @@
     <PackageReleaseNotes>Fix issue with command line key/value arguments, which were already split in app's static Main method.</PackageReleaseNotes>
     <PackageTags>arguments; parser; cli; command line</PackageTags>
     <Version>1.1.1.0</Version>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
