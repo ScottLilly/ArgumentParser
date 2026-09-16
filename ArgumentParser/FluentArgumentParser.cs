@@ -22,6 +22,7 @@ public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
     private readonly HashSet<string> _argumentSeparators = new HashSet<string>();
     private readonly HashSet<char> _keyValueSeparators = new HashSet<char>();
     private IEqualityComparer<string>? _comparer;
+    private string[]? _namedArgumentPrefixes;
 
     #endregion
 
@@ -112,6 +113,15 @@ public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
         return this;
     }
 
+    /// <inheritdoc />
+    public IFluentArgumentParserBuilder WithNamedArgumentPrefixes(
+        string[]? namedArgumentPrefixes)
+    {
+        _namedArgumentPrefixes = namedArgumentPrefixes;
+
+        return this;
+    }
+
     #endregion
 
     #region Execution methods
@@ -140,7 +150,8 @@ public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
         return new Parser(
             _argumentSeparators.Count > 0 ? _argumentSeparators.ToArray() : null,
             _keyValueSeparators.Count > 0 ? _keyValueSeparators.ToArray() : null,
-            _comparer);
+            _comparer,
+            _namedArgumentPrefixes);
     }
 
     #endregion

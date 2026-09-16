@@ -104,9 +104,9 @@ public class TestParserQuotedArguments
         Assert.AreEqual("a b c", parsedArguments.NamedArguments["--out"]);
     }
 
-    // Known limitation. Quotes preserve a space inside a value but not at either end of it,
-    // because arguments are still trimmed after the split. Pinned rather than fixed, since
-    // removing the trim would change how multi-character separators behave.
+    // Issue #63. Deliberate, and documented: leading and trailing whitespace is trimmed
+    // from a value whether it was quoted or not. Quoting is for the whitespace in the
+    // middle of a value, which is left exactly as it was typed.
     [TestMethod]
     public void Parse_QuotedValueWithLeadingAndTrailingSpaces_LosesThemToTheTrim()
     {
@@ -115,6 +115,16 @@ public class TestParserQuotedArguments
         ParsedArguments parsedArguments = parser.Parse(@"--msg="" a b """);
 
         Assert.AreEqual("a b", parsedArguments.NamedArguments["--msg"]);
+    }
+
+    [TestMethod]
+    public void Parse_QuotedValueWithRunsOfSpacesInside_KeepsEveryOneOfThem()
+    {
+        Parser parser = new Parser();
+
+        ParsedArguments parsedArguments = parser.Parse(@"--msg=""  a   b  """);
+
+        Assert.AreEqual("a   b", parsedArguments.NamedArguments["--msg"]);
     }
 
     [TestMethod]

@@ -182,6 +182,29 @@ public class TestReadmeSamples
         CollectionAssert.AreEqual(new[] { "-5" }, result.PositionalArguments.ToArray());
     }
 
+    // "A bare -- ends the options"
+    [TestMethod]
+    public void ABareDoubleDashEndsTheOptions()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        SchemaParseResult result = schema.Parse("--output=a.json -- --verbose --notanoption");
+
+        Assert.IsFalse(result.IsSet("--verbose"));
+        CollectionAssert.AreEqual(
+            new[] { "--verbose", "--notanoption" }, result.PositionalArguments.ToArray());
+    }
+
+    // "A flag is never a repeat error ... Every occurrence is recorded"
+    [TestMethod]
+    public void ARepeatedFlagIsCounted()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        Assert.AreEqual(3,
+            schema.Parse("--output=a.json -v -v -v").AllValuesOf<bool>("--verbose").Count);
+    }
+
     // "Help text writes itself", including the block showing exactly what HelpText() gives.
     [TestMethod]
     public void HelpTextWritesItself()
@@ -357,14 +380,59 @@ public class TestReadmeSamples
 
     #endregion
 
-    #region A bare Windows path becomes a named argument
+    #region A named argument's key has to carry a prefix
 
     [TestMethod]
-    public void ABareWindowsPathBecomesANamedArgument()
+    public void ABareWindowsPathIsAStringArgument()
     {
         var parsedArguments = new Parser().Parse(@"C:\Test\file.txt");
 
-        Assert.AreEqual(@"\Test\file.txt", parsedArguments.NamedArguments["C"]);
+        Assert.AreEqual(0, parsedArguments.NamedArguments.Count);
+        Assert.AreEqual(@"C:\Test\file.txt", parsedArguments.StringArguments[0]);
+    }
+
+    // "An unprefixed key is a string argument too"
+    [TestMethod]
+    public void AnUnprefixedKeyIsAStringArgument()
+    {
+        var parsedArguments = new Parser().Parse("db=MyDb");
+
+        Assert.AreEqual(0, parsedArguments.NamedArguments.Count);
+        Assert.AreEqual("db=MyDb", parsedArguments.StringArguments[0]);
+    }
+
+    // "Pass an empty array of prefixes to accept any key, which is what 1.x did"
+    [TestMethod]
+    public void AnEmptyPrefixArrayAcceptsAnyKey()
+    {
+        var parser = new Parser(namedArgumentPrefixes: new string[0]);
+
+        var parsedArguments = parser.Parse("db=MyDb");
+
+        Assert.AreEqual("MyDb", parsedArguments.NamedArguments["db"]);
+    }
+
+    // "or name the prefixes your application actually uses"
+    [TestMethod]
+    public void WindowsSwitchPrefixIsRecognizedWhenDeclared()
+    {
+        var parser = new Parser(namedArgumentPrefixes: new[] { "/" });
+
+        var parsedArguments = parser.Parse("/out:a.json");
+
+        Assert.AreEqual("a.json", parsedArguments.NamedArguments["/out"]);
+    }
+
+    #endregion
+
+    #region Leading and trailing whitespace is trimmed
+
+    [TestMethod]
+    public void QuotedValuesAreTrimmedButKeepTheirInnerSpaces()
+    {
+        var parsedArguments = new Parser().Parse("--name=\"  a  b  \"");
+
+        Assert.AreEqual("a  b", parsedArguments.NamedArguments["--name"]);
     }
 
     #endregion

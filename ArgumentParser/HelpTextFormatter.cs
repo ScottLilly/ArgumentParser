@@ -171,9 +171,17 @@ internal static class HelpTextFormatter
         return description.Length == 0 ? noteText : description + " " + noteText;
     }
 
+    // Every kind of whitespace breaks a word, not just a space. A description written with
+    // a newline or a tab in it would otherwise be emitted with it intact, and one embedded
+    // line break wrecks the column layout for the whole option list.
+    private static readonly char[] s_wordBreaks =
+        { ' ', '\t', '\r', '\n', '\f', '\v' };
+
     /// <summary>
     /// Wraps at a word boundary, at the width asked for rather than the console's, so
-    /// output that is piped to a file looks the same as output that is not.
+    /// output that is piped to a file looks the same as output that is not. Whitespace in
+    /// the text is collapsed, so an explicit newline is a word break rather than a
+    /// paragraph break.
     /// </summary>
     private static IEnumerable<string> Wrap(string? text, int width)
     {
@@ -192,7 +200,7 @@ internal static class HelpTextFormatter
 
         StringBuilder line = new StringBuilder();
 
-        foreach (string word in text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+        foreach (string word in text.Split(s_wordBreaks, StringSplitOptions.RemoveEmptyEntries))
         {
             if (line.Length > 0 && line.Length + 1 + word.Length > width)
             {

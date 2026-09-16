@@ -72,6 +72,15 @@ public interface IFluentArgumentParserBuilder
     IFluentArgumentParserBuilder WithComparer(IEqualityComparer<string>? comparer);
 
     /// <summary>
+    /// Sets the prefixes a key must carry to count as a named argument. Defaults to "--"
+    /// and "-", which is what keeps a bare Windows path out of the named arguments. Pass
+    /// an empty array to accept any key, including an unprefixed one.
+    /// </summary>
+    /// <param name="namedArgumentPrefixes">The prefixes a named argument's key may start with, or null for the default.</param>
+    /// <returns>The same builder, so calls chain.</returns>
+    IFluentArgumentParserBuilder WithNamedArgumentPrefixes(string[]? namedArgumentPrefixes);
+
+    /// <summary>
     /// Parses a command line with the separators collected so far. A null string means no
     /// arguments, and returns an empty ParsedArguments.
     /// </summary>

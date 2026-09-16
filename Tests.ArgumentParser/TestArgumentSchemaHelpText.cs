@@ -151,6 +151,29 @@ public class TestArgumentSchemaHelpText
         Assert.IsTrue(lines[2].Contains("--n <int>"));
     }
 
+    // Issue #64: a newline or a tab in a description is a word break like any other
+    // whitespace. Left intact, one of them would wreck the column layout for every option.
+    [TestMethod]
+    [DataRow("line one\nline two", DisplayName = "Newline")]
+    [DataRow("line one\r\nline two", DisplayName = "Carriage return and newline")]
+    [DataRow("line one\tline two", DisplayName = "Tab")]
+    public void HelpText_DescriptionContainingWhitespace_CollapsesItToASingleSpace(
+        string description)
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .WithoutHelpOption()
+                .Option<string>("--a", description: description)
+                .Build();
+
+        string helpText = schema.HelpText();
+
+        Assert.AreEqual(1,
+            helpText.Split(new[] { Environment.NewLine }, StringSplitOptions.None).Length);
+        Assert.IsTrue(helpText.EndsWith("line one line two", StringComparison.Ordinal),
+            helpText);
+    }
+
     #endregion
 
     #region What each line says

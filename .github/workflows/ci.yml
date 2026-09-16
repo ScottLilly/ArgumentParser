@@ -25,5 +25,9 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    # Runs every test project in the solution, which is both of them: Tests.ArgumentParser
+    # against the net8.0 build of the library, and Tests.ArgumentParser.NetStandard against
+    # the netstandard2.0 build. Adding another test project needs nothing here, as long as
+    # it is in the solution.
     - name: Test
       run: dotnet test --no-build --verbosity normal

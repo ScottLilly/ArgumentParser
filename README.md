@@ -171,6 +171,12 @@ Assert.AreEqual(3, result.Errors.Count);
 
 The kinds are `UnknownOption`, `MissingValue`, `UnconvertibleValue`, `MissingRequiredOption` and `OptionNotRepeatable`. If you would rather handle one exception than check `Success`, use `ParseOrThrow`, which throws an `ArgumentParseException` carrying the same list.
 
+`OptionNotRepeatable` applies to an option that takes a value. A flag is never a repeat error, since `-v -v` is what someone types when they want more of whatever the flag asks for. Every occurrence is recorded, so you can count them:
+
+```csharp
+Assert.AreEqual(3, schema.Parse("--output=a.json -v -v -v").AllValuesOf<bool>("--verbose").Count);
+```
+
 ### Arguments that are not options
 Anything that is not option-shaped is handed back untouched, in order, so positional arguments still work:
 
@@ -181,6 +187,18 @@ CollectionAssert.AreEqual(new[] { "input.txt", "other.txt" }, result.PositionalA
 ```
 
 An argument counts as option-shaped if it starts with `--` or `-` (change that with `WithOptionPrefixes`) and is not a negative number, so `-5` is a positional argument rather than an unknown option.
+
+A bare `--` ends the options. Everything after it is positional whatever it looks like, which is the only way to pass a positional argument that does start with a prefix:
+
+```csharp
+SchemaParseResult result = schema.Parse("--output=a.json -- --verbose --notanoption");
+
+Assert.IsFalse(result.IsSet("--verbose"));
+CollectionAssert.AreEqual(
+    new[] { "--verbose", "--notanoption" }, result.PositionalArguments.ToArray());
+```
+
+The marker itself is consumed, and a second `--` after it is an ordinary positional argument. It is tied to the configured prefixes, so a schema built with `WithOptionPrefixes("/")` leaves `--` alone. The untyped `Parser` does not have the concept: `--` there is a string argument like any other.
 
 ### Help text writes itself
 `--help` and `-h` are recognized automatically and reported through the result, so nothing is printed unless you print it. The text is built from the same declarations that parse the arguments, so the two cannot disagree:
@@ -219,7 +237,7 @@ Usage: myapp <input> [options]
   -h, --help           Show this help
 ```
 
-Asking for help suppresses everything else, so `myapp --help` does not complain that `--output` is missing. Descriptions wrap at a fixed width (80 by default, `HelpText(100)` to change it) rather than at the console's, so redirected output is stable. If you want the names for yourself, use `WithoutHelpOption()`. When the usage line is only the application name, `WithApplicationName("myapp")` builds `Usage: myapp [options]` for you instead of `WithUsage`.
+Asking for help suppresses everything else, so `myapp --help` does not complain that `--output` is missing. Descriptions wrap at a fixed width (80 by default, `HelpText(100)` to change it) rather than at the console's, so redirected output is stable. Whitespace in a description is collapsed, so a newline or a tab in one is a word break rather than something that breaks the column layout. If you want the names for yourself, use `WithoutHelpOption()`. When the usage line is only the application name, `WithApplicationName("myapp")` builds `Usage: myapp [options]` for you instead of `WithUsage`.
 
 The untyped `Parser` is still the right tool when you are parsing a free-form string rather than a known set of options.
 
@@ -260,16 +278,44 @@ Assert.AreEqual("release-1.2", parsedArguments.NamedArguments["branch"]);
 
 If you cannot rely on callers quoting, keep the prefix on the key instead.
 
-### A bare Windows path becomes a named argument
-`Parser` has nothing to check a key against, so anything with a key/value separator in it is a named argument. With the default `:` separator that includes a drive letter:
+### A named argument's key has to carry a prefix
+`Parser` has nothing to check a key against, so the prefix is what tells a named argument from a value that happens to contain a separator. A key that does not start with `--` or `-` is not a named argument, which is what keeps a Windows path out of them:
 
 ```csharp
 var parsedArguments = new Parser().Parse(@"C:\Test\file.txt");
 
-Assert.AreEqual(@"\Test\file.txt", parsedArguments.NamedArguments["C"]);
+Assert.AreEqual(0, parsedArguments.NamedArguments.Count);
+Assert.AreEqual(@"C:\Test\file.txt", parsedArguments.StringArguments[0]);
 ```
 
-If your arguments include paths, either drop `:` from the key/value separators (`new Parser(keyValueSeparators: new[] { '=' })`) or declare your options with `ArgumentSchema`, which only splits at a separator when the key is a declared option.
+An unprefixed key is a string argument too:
+
+```csharp
+var parsedArguments = new Parser().Parse("db=MyDb");
+
+Assert.AreEqual(0, parsedArguments.NamedArguments.Count);
+Assert.AreEqual("db=MyDb", parsedArguments.StringArguments[0]);
+```
+
+Pass an empty array of prefixes to accept any key, which is what 1.x did:
+
+```csharp
+var parser = new Parser(namedArgumentPrefixes: new string[0]);
+
+Assert.AreEqual("MyDb", parser.Parse("db=MyDb").NamedArguments["db"]);
+```
+
+Or name the prefixes your application actually uses:
+
+```csharp
+var parser = new Parser(namedArgumentPrefixes: new[] { "/" });
+
+Assert.AreEqual("a.json", parser.Parse("/out:a.json").NamedArguments["/out"]);
+```
+
+The fluent builder takes the same thing through `WithNamedArgumentPrefixes`. Stripping the prefix by making it an argument separator still works, described above: the prefix is gone from the key by the time the parser sees it, but the argument still followed one, and that is what counts.
+
+This changed in 2.0.0. Before then, anything containing a key/value separator was a named argument.
 
 ### Names are matched without regard to case
 `--output` and `--Output` are the same argument. Pass `StringComparer.Ordinal` if you want them treated as two:
@@ -313,6 +359,17 @@ Assert.AreEqual(@"C:\Test\My Project.sln", parsedArguments.NamedArguments["--sol
 ```
 
 There is no escape sequence, so a value cannot itself contain a double quote.
+
+### Leading and trailing whitespace is trimmed
+Every argument, and every named argument's value, is trimmed at both ends, quoted or not. Whitespace inside a value is left exactly as it was typed, including a run of several spaces:
+
+```csharp
+var parsedArguments = new Parser().Parse("--name=\"  a  b  \"");
+
+Assert.AreEqual("a  b", parsedArguments.NamedArguments["--name"]);
+```
+
+`ArgumentSchema` does the same. Quoting is for the whitespace in the middle of a value; there is no way to keep whitespace at either end of one.
 
 ## Requirements
 - .NET Standard 2.0 or .NET 8.0. The package ships both, so it runs on .NET Framework 4.6.1 and later, .NET Core 2.0 and later, and .NET 5 and later.

@@ -137,6 +137,63 @@ public class TestArgumentSchema
         CollectionAssert.AreEqual(new[] { argument }, result.PositionalArguments.ToArray());
     }
 
+    // Issue #60: everything after a bare "--" is positional, which is the only way to pass
+    // a positional argument that starts with an option prefix.
+    [TestMethod]
+    public void Parse_EndOfOptionsMarker_MakesEverythingAfterItPositional()
+    {
+        SchemaParseResult result =
+            BuildStandardSchema().Parse("--output=a.json -- --verbose --notanoption x");
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.IsFalse(result.IsSet("--verbose"));
+        CollectionAssert.AreEqual(
+            new[] { "--verbose", "--notanoption", "x" },
+            result.PositionalArguments.ToArray());
+    }
+
+    // The marker itself is consumed. A second one is an ordinary positional argument,
+    // since the options have already ended.
+    [TestMethod]
+    public void Parse_EndOfOptionsMarker_IsNotItselfPositional()
+    {
+        SchemaParseResult result = BuildStandardSchema().Parse("--output=a.json -- -- x");
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        CollectionAssert.AreEqual(
+            new[] { "--", "x" }, result.PositionalArguments.ToArray());
+    }
+
+    [TestMethod]
+    public void Parse_EndOfOptionsMarkerInAnArray_MakesEverythingAfterItPositional()
+    {
+        SchemaParseResult result =
+            BuildStandardSchema().Parse(new[] { "--output=a.json", "--", "--verbose" });
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.IsFalse(result.IsSet("--verbose"));
+        CollectionAssert.AreEqual(
+            new[] { "--verbose" }, result.PositionalArguments.ToArray());
+    }
+
+    // Tied to the configured prefixes, so a schema whose users would never type "--" does
+    // not quietly give it a meaning.
+    [TestMethod]
+    public void Parse_EndOfOptionsMarker_IsNotSpecialWhenTheDashPrefixesAreNotConfigured()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .WithOptionPrefixes("/")
+                .Flag("/verbose")
+                .Build();
+
+        SchemaParseResult result = schema.Parse("-- /verbose");
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.IsTrue(result.ValueOf<bool>("/verbose"));
+        CollectionAssert.AreEqual(new[] { "--" }, result.PositionalArguments.ToArray());
+    }
+
     #endregion
 
     #region Errors
@@ -215,6 +272,32 @@ public class TestArgumentSchema
         Assert.IsFalse(result.Success);
         Assert.AreEqual(ParseErrorKind.OptionNotRepeatable, result.Errors[0].Kind);
         Assert.AreEqual("--timeout", result.Errors[0].OptionName);
+    }
+
+    // Issue #59: a flag is exempt. "-v -v" is what someone types when they want more of
+    // whatever the flag asks for, and no command line tool treats it as a mistake.
+    [TestMethod]
+    [DataRow("--verbose --verbose", DisplayName = "Repeated by name")]
+    [DataRow("-v -v", DisplayName = "Repeated by alias")]
+    [DataRow("--verbose -v", DisplayName = "Once by each")]
+    public void Parse_FlagGivenMoreThanOnce_IsNotAnError(string arguments)
+    {
+        SchemaParseResult result =
+            BuildStandardSchema().Parse($"--output=a.json {arguments}");
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.IsTrue(result.ValueOf<bool>("--verbose"));
+    }
+
+    // Every occurrence is still recorded, so a caller who wants "-vv means more verbose"
+    // can count them.
+    [TestMethod]
+    public void Parse_FlagGivenMoreThanOnce_KeepsEveryOccurrence()
+    {
+        SchemaParseResult result =
+            BuildStandardSchema().Parse("--output=a.json -v -v -v");
+
+        Assert.AreEqual(3, result.AllValuesOf<bool>("--verbose").Count);
     }
 
     // A command line application usually wants to print every problem at once rather than
@@ -481,6 +564,20 @@ public class TestArgumentSchema
 
         Assert.IsTrue(result.Success, result.ErrorText());
         Assert.AreEqual(string.Empty, result.ValueOf<string>("--name"));
+    }
+
+    // Issue #63. The schema trims the same way the untyped Parser does, and for the same
+    // reason: the whitespace someone meant to keep is the whitespace in the middle.
+    [TestMethod]
+    public void Parse_QuotedValueWithSpacesAtBothEnds_IsTrimmedButKeepsItsInnerSpaces()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<string>("--name").Build();
+
+        SchemaParseResult result = schema.Parse("--name \"  a   b  \"");
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.AreEqual("a   b", result.ValueOf<string>("--name"));
     }
 
     [TestMethod]

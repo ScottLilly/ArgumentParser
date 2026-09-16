@@ -6,7 +6,7 @@ namespace ArgumentParser;
 /// <summary>
 /// Parser class for parsing command line arguments into a structured format.
 /// </summary>
-public class Parser
+public sealed class Parser
 {
     #region Private variables
 
@@ -15,6 +15,8 @@ public class Parser
         new ReadOnlyCollection<string>(new string[] { " " });
     private static readonly ReadOnlyCollection<string> s_defaultKeyValueSeparators =
         new ReadOnlyCollection<string>(new string[] { ":", "=" });
+    private static readonly ReadOnlyCollection<string> s_defaultNamedArgumentPrefixes =
+        new ReadOnlyCollection<string>(new string[] { "--", "-" });
 
     // Command line option names are conventionally case-insensitive on Windows, which is
     // where most consumers of this package run. Pass StringComparer.Ordinal for the
@@ -24,6 +26,7 @@ public class Parser
 
     private readonly string[] _argSeparators;
     private readonly string[] _keyValueSeparators;
+    private readonly string[] _namedArgumentPrefixes;
     private readonly IEqualityComparer<string> _comparer;
 
     #endregion
@@ -36,8 +39,9 @@ public class Parser
     /// <param name="argSeparators">(Optional) array of characters that indicate a separator between arguments. Default value is { ' ' }</param>
     /// <param name="keyValueSeparators">(Optional) array of characters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
     /// <param name="comparer">(Optional) comparer used to match named argument names. Defaults to StringComparer.OrdinalIgnoreCase, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to match names case-sensitively.</param>
+    /// <param name="namedArgumentPrefixes">(Optional) prefixes a key must carry to count as a named argument. Default values are { "--", "-" }. Pass an empty array to accept any key, including an unprefixed one.</param>
     public Parser(char[]? argSeparators = null, char[]? keyValueSeparators = null,
-        IEqualityComparer<string>? comparer = null)
+        IEqualityComparer<string>? comparer = null, string[]? namedArgumentPrefixes = null)
     {
         _argSeparators =
             argSeparators?.Select(c => c.ToString()).ToArray()
@@ -46,6 +50,9 @@ public class Parser
         _keyValueSeparators =
             keyValueSeparators?.Select(c => c.ToString()).ToArray()
             ?? s_defaultKeyValueSeparators.ToArray();
+
+        _namedArgumentPrefixes =
+            namedArgumentPrefixes ?? s_defaultNamedArgumentPrefixes.ToArray();
 
         _comparer = comparer ?? s_defaultComparer;
     }
@@ -56,8 +63,9 @@ public class Parser
     /// <param name="argSeparators">(Optional) array of strings that indicate a separator between arguments. Default value is { " " }</param>
     /// <param name="keyValueSeparators">(Optional) array of characters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
     /// <param name="comparer">(Optional) comparer used to match named argument names. Defaults to StringComparer.OrdinalIgnoreCase, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to match names case-sensitively.</param>
+    /// <param name="namedArgumentPrefixes">(Optional) prefixes a key must carry to count as a named argument. Default values are { "--", "-" }. Pass an empty array to accept any key, including an unprefixed one.</param>
     public Parser(string[]? argSeparators, char[]? keyValueSeparators = null,
-        IEqualityComparer<string>? comparer = null)
+        IEqualityComparer<string>? comparer = null, string[]? namedArgumentPrefixes = null)
     {
         _argSeparators =
             argSeparators
@@ -66,6 +74,9 @@ public class Parser
         _keyValueSeparators =
             keyValueSeparators?.Select(c => c.ToString()).ToArray()
             ?? s_defaultKeyValueSeparators.ToArray();
+
+        _namedArgumentPrefixes =
+            namedArgumentPrefixes ?? s_defaultNamedArgumentPrefixes.ToArray();
 
         _comparer = comparer ?? s_defaultComparer;
     }
@@ -104,6 +115,10 @@ public class Parser
     /// A double quoted section is not split on, so a value can contain a separator
     /// ("--solution=\"C:\\My Project.sln\""). The quotes group the value and are removed
     /// from it. There is no escape sequence, so a value cannot contain a double quote.
+    /// Leading and trailing whitespace is trimmed from every argument and from every
+    /// named argument's value, quoted or not. Whitespace inside a value is left alone.
+    /// An argument is only a named argument when its key carries one of the named argument
+    /// prefixes, so a bare Windows path is a string argument rather than the key "C".
     /// </summary>
     /// <param name="arguments">String containing arguments to parse. May be null.</param>
     /// <returns>ParsedArguments object, populated with values from the arguments parameter</returns>
@@ -112,9 +127,13 @@ public class Parser
         // Null is treated as no arguments rather than as an error, so a Main(string[] args)
         // caller does not have to guard the call. Empty input already returned an empty
         // result, and this makes null agree with it.
-        string[] splitArgs = ArgumentTokenizer
+        // The tokens are carried whole rather than reduced to their text, because which
+        // separator a token followed is part of deciding whether its key was prefixed.
+        ArgumentToken[] tokens = ArgumentTokenizer
             .Split(arguments ?? string.Empty, _argSeparators)
-            .Select(token => token.Text)
+            .Select(token => new ArgumentToken(
+                token.Text.Trim(), token.WasQuoted, token.PrecedingSeparator))
+            .Where(token => token.Text.Length > 0)
             .ToArray();
 
         List<int> integerArguments = new List<int>();
@@ -126,14 +145,13 @@ public class Parser
         Dictionary<string, List<string>> allNamedArgumentValues =
             new Dictionary<string, List<string>>(_comparer);
 
-        string[] args = splitArgs
-            .Select(arg => arg.Trim())
-            .Where(arg => !string.IsNullOrEmpty(arg))
-            .ToArray();
+        string[] args = tokens.Select(token => token.Text).ToArray();
 
-        foreach (string arg in args)
+        foreach (ArgumentToken token in tokens)
         {
-            if (TryParseNamedArgument(arg, out KeyValuePair<string, string> namedArgument))
+            string arg = token.Text;
+
+            if (TryParseNamedArgument(token, out KeyValuePair<string, string> namedArgument))
             {
                 // Last value wins, matching what most command line applications do with a
                 // repeated option, but every value is kept so nothing the user typed is
@@ -185,13 +203,18 @@ public class Parser
 
     #region Private Methods
 
-    private bool TryParseNamedArgument(string argument,
+    private bool TryParseNamedArgument(ArgumentToken token,
         out KeyValuePair<string, string> namedArgument)
     {
         namedArgument = default;
 
-        if (!ArgumentTokenizer.TrySplitKeyValue(argument, _keyValueSeparators,
+        if (!ArgumentTokenizer.TrySplitKeyValue(token.Text, _keyValueSeparators,
                 out string key, out string value))
+        {
+            return false;
+        }
+
+        if (!HasNamedArgumentPrefix(key, token.PrecedingSeparator))
         {
             return false;
         }
@@ -200,6 +223,24 @@ public class Parser
 
         return true;
     }
+
+    /// <summary>
+    /// True when the key was written with one of the named argument prefixes. Without this,
+    /// anything containing a key/value separator is a named argument, and a bare Windows
+    /// path becomes the key "C" with the rest of the path as its value.
+    /// <para>
+    /// A prefix that is also an argument separator has already been eaten by the split, so
+    /// "--solution:a" arrives as the key "solution" and is matched on the separator it
+    /// followed instead. That is the idiom for stripping the prefix from the key, and it
+    /// would otherwise stop working.
+    /// </para>
+    /// </summary>
+    private bool HasNamedArgumentPrefix(string key, string? precedingSeparator) =>
+        _namedArgumentPrefixes.Length == 0
+        || _namedArgumentPrefixes.Any(prefix =>
+            (key.Length > prefix.Length
+                && key.StartsWith(prefix, StringComparison.Ordinal))
+            || string.Equals(precedingSeparator, prefix, StringComparison.Ordinal));
 
     #endregion
 }

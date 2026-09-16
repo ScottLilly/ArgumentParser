@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Issue #67. The library multi-targets, but Tests.ArgumentParser only ever exercises
+       the net8.0 build, so a regression specific to netstandard2.0 would ship unnoticed.
+       This project runs the same tests against the netstandard2.0 assembly instead: the
+       test sources are linked rather than copied, so the two can never drift apart, and
+       SetTargetFramework pins which build of the library is referenced. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+
+    <Version>2.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="MSTest" Version="3.11.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Tests.ArgumentParser\**\*.cs"
+             Exclude="..\Tests.ArgumentParser\bin\**\*.cs;..\Tests.ArgumentParser\obj\**\*.cs"
+             Link="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- SetTargetFramework overrides what the reference resolves to, so this project gets
+         the netstandard2.0 asset even though it runs on net8.0. That is the same asset a
+         .NET Framework consumer of the package would get. -->
+    <ProjectReference Include="..\ArgumentParser\ArgumentParser.csproj"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+</Project>

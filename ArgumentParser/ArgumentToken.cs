@@ -11,9 +11,18 @@ internal readonly struct ArgumentToken
 
     internal bool WasQuoted { get; }
 
-    internal ArgumentToken(string text, bool wasQuoted)
+    /// <summary>
+    /// The argument separator that ended the previous token, or null for the first token in
+    /// the command line. This is how a prefix that was consumed by the split is remembered:
+    /// with "--" configured as an argument separator, "--solution:a" arrives here as
+    /// "solution:a" preceded by "--", and the key still counts as prefixed.
+    /// </summary>
+    internal string? PrecedingSeparator { get; }
+
+    internal ArgumentToken(string text, bool wasQuoted, string? precedingSeparator = null)
     {
         Text = text;
         WasQuoted = wasQuoted;
+        PrecedingSeparator = precedingSeparator;
     }
 }

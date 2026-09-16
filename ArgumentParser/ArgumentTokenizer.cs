@@ -12,7 +12,7 @@ internal static class ArgumentTokenizer
     /// Splits on the argument separators, except where a separator falls inside a pair of
     /// double quotes, so a value containing a separator survives as one argument. The
     /// quotes group the value and are not part of it, so they are removed as it is read,
-    /// and each token remembers whether it had any.
+    /// and each token remembers whether it had any, and which separator it followed.
     /// </summary>
     internal static ArgumentToken[] Split(string arguments, string[] separators)
     {
@@ -20,6 +20,7 @@ internal static class ArgumentTokenizer
         StringBuilder current = new StringBuilder();
         bool insideQuotes = false;
         bool quoted = false;
+        string? precedingSeparator = null;
         int index = 0;
 
         while (index < arguments.Length)
@@ -44,12 +45,13 @@ internal static class ArgumentTokenizer
                 continue;
             }
 
-            AddToken(tokens, current, quoted);
+            AddToken(tokens, current, quoted, precedingSeparator);
             quoted = false;
+            precedingSeparator = separator;
             index += separator.Length;
         }
 
-        AddToken(tokens, current, quoted);
+        AddToken(tokens, current, quoted, precedingSeparator);
 
         return tokens.ToArray();
     }
@@ -57,7 +59,7 @@ internal static class ArgumentTokenizer
     // A run of separators, or a separator at either end, contributes nothing. A quoted
     // empty string was typed deliberately, so it is kept.
     private static void AddToken(List<ArgumentToken> tokens, StringBuilder current,
-        bool quoted)
+        bool quoted, string? precedingSeparator)
     {
         string text = current.ToString();
 
@@ -65,7 +67,7 @@ internal static class ArgumentTokenizer
 
         if (text.Length > 0 || quoted)
         {
-            tokens.Add(new ArgumentToken(text, quoted));
+            tokens.Add(new ArgumentToken(text, quoted, precedingSeparator));
         }
     }
 

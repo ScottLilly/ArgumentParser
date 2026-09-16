@@ -111,7 +111,8 @@ public sealed class ArgumentSchema
     /// element is one argument as the shell already tokenized it, so a value containing
     /// whitespace, a double quote, or nothing at all survives as given. An element of
     /// "--name=" is an option with its value left out, the same as on a command line;
-    /// an explicitly empty value is its own element.
+    /// an explicitly empty value is its own element. An element of "--" ends the options,
+    /// so everything after it is positional.
     /// </summary>
     public SchemaParseResult Parse(string?[]? args) =>
         ParseTokens((args ?? new string?[0])
@@ -123,7 +124,9 @@ public sealed class ArgumentSchema
     /// Parses a command line against the declared options. A null string means no
     /// arguments. Because the options are declared, an option that takes a value can be
     /// written either way round: "--timeout 60" and "--timeout=60" both work, and a flag
-    /// needs no value at all.
+    /// needs no value at all. A bare "--" ends the options, so everything after it is
+    /// positional whatever it looks like. Leading and trailing whitespace is trimmed from
+    /// every argument and value, quoted or not; whitespace inside a value is left alone.
     /// </summary>
     public SchemaParseResult Parse(string? arguments) =>
         ParseTokens(ArgumentTokenizer
@@ -209,9 +212,28 @@ public sealed class ArgumentSchema
         Dictionary<string, List<string>> rawValues, List<string> positionalArguments,
         List<ParseError> errors)
     {
+        bool endOfOptions = false;
+
         for (int index = 0; index < tokens.Length; index++)
         {
             string token = tokens[index].Text;
+
+            // A bare "--" ends the options: everything after it is positional, whatever it
+            // looks like. That is the only way to pass a positional argument that starts
+            // with an option prefix.
+            if (!endOfOptions && IsEndOfOptionsMarker(token))
+            {
+                endOfOptions = true;
+
+                continue;
+            }
+
+            if (endOfOptions)
+            {
+                positionalArguments.Add(token);
+
+                continue;
+            }
 
             // "--timeout=60" and "--timeout:60". The name has to be declared, so a value
             // that merely contains a separator ("C:\build") is not mistaken for one.
@@ -314,7 +336,12 @@ public sealed class ArgumentSchema
     {
         foreach (OptionDefinition option in Options)
         {
-            if (option.IsRepeatable
+            // A flag is never a repeat error. Command line tools tolerate "-v -v", and
+            // some read the count as more of whatever the flag asks for, so reporting it
+            // would make this parser stricter than the convention it follows. Every
+            // occurrence is still recorded, so AllValuesOf<bool> can count them.
+            if (option.IsFlag
+                || option.IsRepeatable
                 || !rawValues.TryGetValue(option.Name, out List<string>? values)
                 || values.Count < 2)
             {
@@ -407,6 +434,14 @@ public sealed class ArgumentSchema
     private static ParseError MissingValue(OptionDefinition option, string nameAsTyped) =>
         new ParseError(ParseErrorKind.MissingValue, option.Name, null,
             $"Option '{nameAsTyped}' needs a value.");
+
+    /// <summary>
+    /// True for the bare "--" that ends the options. Tied to the configured prefixes rather
+    /// than hard coded, so a schema built with WithOptionPrefixes("/") does not give a
+    /// meaning to something its users would never type.
+    /// </summary>
+    private bool IsEndOfOptionsMarker(string token) =>
+        token == "--" && _optionPrefixes.Contains("--", StringComparer.Ordinal);
 
     /// <summary>
     /// True when the argument looks like an option name rather than a value, which is what

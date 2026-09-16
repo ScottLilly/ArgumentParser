@@ -16,6 +16,9 @@ Breaking changes:
 - Null input returns an empty result instead of throwing.
 - A fluent builder with no separators configured uses the same defaults as the Parser constructor, instead of matching no named arguments.
 - FluentArgumentParser's parameterless constructor is private. Create() was always the intended entry point, and it and every chaining method return the interface, so "new FluentArgumentParser()" was a way in that nothing else used.
+- Parser only reads a key/value argument as a named argument when its key carries one of the named argument prefixes, which default to "--" and "-". A bare Windows path is a string argument rather than the key "C", and so is any other unprefixed "a=b". Pass namedArgumentPrefixes to the Parser constructor, or WithNamedArgumentPrefixes on the fluent builder, to name your own prefixes, or an empty array for the 1.x behavior. Making a prefix an argument separator still strips it from the key, as before.
+- Parser is sealed. Nothing could usefully derive from it, and every other public type except ArgumentParseException was sealed in 2.0.0 already.
+- A flag given more than once is no longer reported as OptionNotRepeatable. "-v -v" is what someone types when they want more of what the flag asks for, and every occurrence is recorded, so AllValuesOf can count them. OptionNotRepeatable still applies to an option that takes a value.
 
 Added:
 
@@ -27,3 +30,4 @@ Added:
 - Error reporting for a schema parse. Unknown options, missing values, unconvertible values, missing required options and unexpected repeats are all reported, and every problem is collected rather than only the first. Read them from SchemaParseResult.Errors, or use ParseOrThrow for an ArgumentParseException carrying the same list.
 - ParsedArguments.AllValuesOf(name) returns every value given for a repeated name, in the order given. NamedArguments still holds the last one.
 - An optional comparer for named argument names, on both Parser constructors and as WithComparer on the fluent builder.
+- A bare "--" ends the options in a schema parse. Everything after it is positional, whatever it looks like, which is the only way to pass a positional argument that starts with an option prefix. It is tied to the configured option prefixes, so a schema built with WithOptionPrefixes("/") leaves "--" alone. The untyped Parser is unchanged: "--" there is an ordinary string argument.

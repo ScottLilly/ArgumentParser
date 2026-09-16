@@ -408,11 +408,42 @@ public class TestParserEdgeCases
             FluentArgumentParser
             .Create()
             .AddArgumentSeparator(',')
+            .Parse("--mode=test,--other:value");
+
+        Assert.AreEqual(2, parsedArguments.NamedArguments.Count);
+        Assert.AreEqual("test", parsedArguments.NamedArguments["--mode"]);
+        Assert.AreEqual("value", parsedArguments.NamedArguments["--other"]);
+    }
+
+    // Issue #58: the same arguments without prefixes, which the fluent builder accepts
+    // again once the prefix requirement is turned off.
+    [TestMethod]
+    public void FluentParse_EmptyNamedArgumentPrefixes_AcceptsUnprefixedKeys()
+    {
+        ParsedArguments parsedArguments =
+            FluentArgumentParser
+            .Create()
+            .AddArgumentSeparator(',')
+            .WithNamedArgumentPrefixes(new string[0])
             .Parse("mode=test,other:value");
 
         Assert.AreEqual(2, parsedArguments.NamedArguments.Count);
         Assert.AreEqual("test", parsedArguments.NamedArguments["mode"]);
         Assert.AreEqual("value", parsedArguments.NamedArguments["other"]);
+    }
+
+    [TestMethod]
+    public void FluentParse_NullNamedArgumentPrefixes_KeepsTheDefaults()
+    {
+        ParsedArguments parsedArguments =
+            FluentArgumentParser
+            .Create()
+            .WithNamedArgumentPrefixes(null)
+            .Parse("--mode=test other=value");
+
+        Assert.AreEqual(1, parsedArguments.NamedArguments.Count);
+        Assert.AreEqual("test", parsedArguments.NamedArguments["--mode"]);
+        Assert.AreEqual("other=value", parsedArguments.StringArguments[0]);
     }
 
     #endregion
