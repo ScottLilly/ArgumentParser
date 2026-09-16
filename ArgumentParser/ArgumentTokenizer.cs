@@ -11,13 +11,15 @@ internal static class ArgumentTokenizer
     /// <summary>
     /// Splits on the argument separators, except where a separator falls inside a pair of
     /// double quotes, so a value containing a separator survives as one argument. The
-    /// quotes group the value and are not part of it, so they are removed as it is read.
+    /// quotes group the value and are not part of it, so they are removed as it is read,
+    /// and each token remembers whether it had any.
     /// </summary>
-    internal static string[] Split(string arguments, string[] separators)
+    internal static ArgumentToken[] Split(string arguments, string[] separators)
     {
-        List<string> splitArgs = new List<string>();
+        List<ArgumentToken> tokens = new List<ArgumentToken>();
         StringBuilder current = new StringBuilder();
         bool insideQuotes = false;
+        bool quoted = false;
         int index = 0;
 
         while (index < arguments.Length)
@@ -25,6 +27,7 @@ internal static class ArgumentTokenizer
             if (arguments[index] == '"')
             {
                 insideQuotes = !insideQuotes;
+                quoted = true;
                 index++;
 
                 continue;
@@ -41,16 +44,29 @@ internal static class ArgumentTokenizer
                 continue;
             }
 
-            splitArgs.Add(current.ToString());
-            current.Clear();
+            AddToken(tokens, current, quoted);
+            quoted = false;
             index += separator.Length;
         }
 
-        splitArgs.Add(current.ToString());
+        AddToken(tokens, current, quoted);
 
-        // Matches the RemoveEmptyEntries this replaced. A run of separators, or a
-        // separator at either end, contributes nothing.
-        return splitArgs.Where(a => a.Length > 0).ToArray();
+        return tokens.ToArray();
+    }
+
+    // A run of separators, or a separator at either end, contributes nothing. A quoted
+    // empty string was typed deliberately, so it is kept.
+    private static void AddToken(List<ArgumentToken> tokens, StringBuilder current,
+        bool quoted)
+    {
+        string text = current.ToString();
+
+        current.Clear();
+
+        if (text.Length > 0 || quoted)
+        {
+            tokens.Add(new ArgumentToken(text, quoted));
+        }
     }
 
     /// <summary>

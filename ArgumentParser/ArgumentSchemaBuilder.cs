@@ -22,14 +22,16 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
     private bool _includeHelpOption = true;
 
     public IArgumentSchemaBuilder Option<T>(string name, string? alias = null,
-        bool required = false, bool repeatable = false, T? defaultValue = default,
-        string? description = null, string? valueName = null) =>
+        bool required = false, bool repeatable = false,
+        OptionDefault<T> defaultValue = default, string? description = null,
+        string? valueName = null) =>
         Option(name, alias == null ? new string[0] : new[] { alias },
             required, repeatable, defaultValue, description, valueName);
 
     public IArgumentSchemaBuilder Option<T>(string name, string[] aliases,
-        bool required = false, bool repeatable = false, T? defaultValue = default,
-        string? description = null, string? valueName = null)
+        bool required = false, bool repeatable = false,
+        OptionDefault<T> defaultValue = default, string? description = null,
+        string? valueName = null)
     {
         if (!OptionValueConverter.IsSupported(typeof(T)))
         {
@@ -39,7 +41,8 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
         }
 
         return Add(new OptionDefinition(name, aliases, typeof(T), false, required,
-            repeatable, defaultValue, description, valueName));
+            repeatable, defaultValue.HasValue ? (object?)defaultValue.Value : null,
+            description, valueName));
     }
 
     public IArgumentSchemaBuilder Flag(string name, string? alias = null,
@@ -112,18 +115,25 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
         return this;
     }
 
+    // Build leaves the builder as it found it, so calling it twice gives two schemas that
+    // behave the same. The help option in particular is not added to _options: it once
+    // was, and the second Build then found "--help" already taken and left it out.
     public ArgumentSchema Build()
     {
-        OptionDefinition? helpOption = _includeHelpOption ? AddHelpOption() : null;
+        OptionDefinition? helpOption = _includeHelpOption ? MakeHelpOption() : null;
 
-        return new ArgumentSchema(_options, _argSeparators, _keyValueSeparators,
+        IEnumerable<OptionDefinition> options = helpOption == null
+            ? _options
+            : _options.Concat(new[] { helpOption });
+
+        return new ArgumentSchema(options, _argSeparators, _keyValueSeparators,
             _optionPrefixes, _comparer, _applicationName, _description, _usage, helpOption);
     }
 
-    // Added last, so it reads as the final line of the help text. Skipped entirely if the
+    // Goes last, so it reads as the final line of the help text. Skipped entirely if the
     // caller has already used either name for something of their own, since taking it from
     // them silently would be worse than having no automatic help.
-    private OptionDefinition? AddHelpOption()
+    private OptionDefinition? MakeHelpOption()
     {
         string[] names = { "--help", "-h" };
 
@@ -132,12 +142,8 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
             return null;
         }
 
-        OptionDefinition helpOption = new OptionDefinition("--help", new[] { "-h" },
+        return new OptionDefinition("--help", new[] { "-h" },
             typeof(bool), true, false, false, false, "Show this help", null);
-
-        _options.Add(helpOption);
-
-        return helpOption;
     }
 
     private IArgumentSchemaBuilder Add(OptionDefinition option)

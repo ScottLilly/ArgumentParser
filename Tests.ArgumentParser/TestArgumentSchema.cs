@@ -441,5 +441,112 @@ public class TestArgumentSchema
             ArgumentSchema.Create().Option<DateTime>("--when").Build());
     }
 
+    // Issue #53. An unconstrained T? default collapsed to default(T) for a value type, so
+    // every int option claimed a default of 0 it was never given.
+    [TestMethod]
+    public void Option_NoDefaultDeclared_HasNoDefaultValue()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .Option<int>("--count")
+                .Option<bool>("--dry")
+                .Option<EmployeeType>("--type")
+                .Option<int>("--declared", defaultValue: 0)
+                .Build();
+
+        Assert.IsNull(schema.Options[0].DefaultValue);
+        Assert.IsNull(schema.Options[1].DefaultValue);
+        Assert.IsNull(schema.Options[2].DefaultValue);
+        Assert.AreEqual(0, schema.Options[3].DefaultValue);
+    }
+
+    #endregion
+
+    #region Empty and quoted values
+
+    // Issue #55. A quoted empty string was dropped by the tokenizer, so "--name """ read
+    // as an option with its value left out.
+    [TestMethod]
+    [DataRow("--name \"\"", DisplayName = "Separate quoted value")]
+    [DataRow("--name=\"\"", DisplayName = "Inline quoted value")]
+    public void Parse_QuotedEmptyValue_IsAnEmptyString(string arguments)
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<string>("--name").Build();
+
+        SchemaParseResult result = schema.Parse(arguments);
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.AreEqual(string.Empty, result.ValueOf<string>("--name"));
+    }
+
+    [TestMethod]
+    public void Parse_EmptyStringArrayElement_IsAnEmptyValue()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<string>("--name").Build();
+
+        SchemaParseResult result = schema.Parse(new[] { "--name", "" });
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.AreEqual(string.Empty, result.ValueOf<string>("--name"));
+    }
+
+    // Issue #57. "--timeout=" was reported as an unconvertible '' rather than as a value
+    // that was left out.
+    [TestMethod]
+    [DataRow("--timeout=", DisplayName = "On a command line")]
+    [DataRow("-t=", DisplayName = "By alias")]
+    public void Parse_InlineSeparatorWithNothingAfterIt_IsAMissingValue(string arguments)
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<int>("--timeout", alias: "-t").Build();
+
+        SchemaParseResult result = schema.Parse(arguments);
+
+        Assert.AreEqual(1, result.Errors.Count);
+        Assert.AreEqual(ParseErrorKind.MissingValue, result.Errors[0].Kind);
+        Assert.AreEqual("--timeout", result.Errors[0].OptionName);
+    }
+
+    [TestMethod]
+    public void Parse_StringArrayElementWithInlineSeparatorAndNoValue_IsAMissingValue()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<int>("--timeout").Build();
+
+        SchemaParseResult result = schema.Parse(new[] { "--timeout=" });
+
+        Assert.AreEqual(ParseErrorKind.MissingValue, result.Errors[0].Kind);
+    }
+
+    // Issue #56. The array used to be joined with spaces and split again, and an element
+    // containing a quote was not requoted, so it was cut into pieces.
+    [TestMethod]
+    public void Parse_StringArrayElementContainingAQuote_SurvivesAsGiven()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<string>("--name").Build();
+
+        SchemaParseResult result = schema.Parse(new[] { "--name", "say \"hi\" now" });
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        Assert.AreEqual("say \"hi\" now", result.ValueOf<string>("--name"));
+        Assert.AreEqual(0, result.PositionalArguments.Count);
+    }
+
+    [TestMethod]
+    public void Parse_StringArrayElementContainingASpace_IsOneToken()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<string>("--output").Build();
+
+        SchemaParseResult result =
+            schema.Parse(new[] { "--output", @"C:\My Project\out.json", "a b" });
+
+        Assert.AreEqual(@"C:\My Project\out.json", result.ValueOf<string>("--output"));
+        CollectionAssert.AreEqual(new[] { "a b" }, result.PositionalArguments.ToArray());
+    }
+
     #endregion
 }

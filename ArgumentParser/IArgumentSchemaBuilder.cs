@@ -13,19 +13,19 @@ public interface IArgumentSchemaBuilder
     /// <param name="alias">(Optional) another name the option answers to, such as "-o".</param>
     /// <param name="required">(Optional) true when leaving the option out is an error.</param>
     /// <param name="repeatable">(Optional) true when the option may be given more than once.</param>
-    /// <param name="defaultValue">(Optional) the value used when the option is not given.</param>
+    /// <param name="defaultValue">(Optional) the value used when the option is not given. Pass a T; leaving it out declares no default, so the help text claims none.</param>
     /// <param name="description">(Optional) what the option does, for error messages and help text.</param>
     /// <param name="valueName">(Optional) what to call the value in help text, such as "path" for "--output path". Defaults to something derived from T.</param>
     IArgumentSchemaBuilder Option<T>(string name, string? alias = null, bool required = false,
-        bool repeatable = false, T? defaultValue = default, string? description = null,
-        string? valueName = null);
+        bool repeatable = false, OptionDefault<T> defaultValue = default,
+        string? description = null, string? valueName = null);
 
     /// <summary>
     /// Declares an option that takes a value and answers to several names.
     /// </summary>
     IArgumentSchemaBuilder Option<T>(string name, string[] aliases, bool required = false,
-        bool repeatable = false, T? defaultValue = default, string? description = null,
-        string? valueName = null);
+        bool repeatable = false, OptionDefault<T> defaultValue = default,
+        string? description = null, string? valueName = null);
 
     /// <summary>
     /// Declares an option that takes no value and is true by its presence alone. Its value

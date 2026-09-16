@@ -221,9 +221,10 @@ public class TestArgumentSchemaHelpText
                 .Option<EmployeeType>("--type", description: "Which team")
                 .Build();
 
-        // Wide enough that the note is on one line, since wrapping is covered above.
+        // Wide enough that the note is on one line, since wrapping is covered above. No
+        // default was declared, so none is claimed (issue #53).
         Assert.IsTrue(schema.HelpText(120)
-            .Contains("(default: Production, one of: Production|Sales|Marketing)"));
+            .Contains("Which team (one of: Production|Sales|Marketing)"));
     }
 
     #endregion
@@ -313,6 +314,41 @@ public class TestArgumentSchemaHelpText
 
         Assert.IsFalse(result.HelpRequested);
         Assert.AreEqual("something", result.ValueOf<string>(name));
+    }
+
+    // Issue #54. The first Build used to add the help option to the builder's own list, so
+    // the second found the name taken and built a schema whose "--help" did nothing.
+    [TestMethod]
+    public void Build_CalledTwice_GivesTwoSchemasThatBothRecognizeHelp()
+    {
+        IArgumentSchemaBuilder builder =
+            ArgumentSchema.Create().Option<string>("--name", required: true);
+
+        ArgumentSchema first = builder.Build();
+        ArgumentSchema second = builder.Build();
+
+        Assert.AreEqual(first.Options.Count, second.Options.Count);
+        Assert.IsTrue(first.Parse("--help").HelpRequested);
+        Assert.IsTrue(second.Parse("--help").HelpRequested);
+        Assert.AreEqual(first.HelpText(), second.HelpText());
+    }
+
+    #endregion
+
+    #region Defaults
+
+    // Issue #53. Every int option used to show "(default: 0)".
+    [TestMethod]
+    public void HelpText_ValueTypedOptionWithNoDefault_DoesNotClaimOne()
+    {
+        string helpText =
+            ArgumentSchema.Create()
+                .Option<int>("--count", description: "How many")
+                .Option<EmployeeType>("--type", description: "Which")
+                .Build()
+                .HelpText();
+
+        Assert.IsFalse(helpText.Contains("default"), helpText);
     }
 
     #endregion

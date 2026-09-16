@@ -112,8 +112,10 @@ public class Parser
         // Null is treated as no arguments rather than as an error, so a Main(string[] args)
         // caller does not have to guard the call. Empty input already returned an empty
         // result, and this makes null agree with it.
-        string[] splitArgs =
-            ArgumentTokenizer.Split(arguments ?? string.Empty, _argSeparators);
+        string[] splitArgs = ArgumentTokenizer
+            .Split(arguments ?? string.Empty, _argSeparators)
+            .Select(token => token.Text)
+            .ToArray();
 
         List<int> integerArguments = new List<int>();
         List<decimal> decimalArguments = new List<decimal>();

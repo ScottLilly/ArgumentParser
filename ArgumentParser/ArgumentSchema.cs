@@ -106,14 +106,18 @@ public sealed class ArgumentSchema
     #region Public Methods
 
     /// <summary>
-    /// Parses an array of arguments against the declared options. A null array means no
-    /// arguments. An element containing whitespace is requoted before the join, so a path
-    /// the shell already unquoted survives as one argument.
+    /// Parses an array of arguments, such as the one handed to Main, against the declared
+    /// options. A null array means no arguments, and null elements are ignored. Each
+    /// element is one argument as the shell already tokenized it, so a value containing
+    /// whitespace, a double quote, or nothing at all survives as given. An element of
+    /// "--name=" is an option with its value left out, the same as on a command line;
+    /// an explicitly empty value is its own element.
     /// </summary>
     public SchemaParseResult Parse(string?[]? args) =>
-        Parse(args == null
-            ? string.Empty
-            : string.Join(" ", args.Select(ArgumentTokenizer.Requote)));
+        ParseTokens((args ?? new string?[0])
+            .OfType<string>()
+            .Select(arg => new ArgumentToken(arg.Trim(), false))
+            .ToArray());
 
     /// <summary>
     /// Parses a command line against the declared options. A null string means no
@@ -121,43 +125,12 @@ public sealed class ArgumentSchema
     /// written either way round: "--timeout 60" and "--timeout=60" both work, and a flag
     /// needs no value at all.
     /// </summary>
-    public SchemaParseResult Parse(string? arguments)
-    {
-        string[] tokens = ArgumentTokenizer
+    public SchemaParseResult Parse(string? arguments) =>
+        ParseTokens(ArgumentTokenizer
             .Split(arguments ?? string.Empty, _argSeparators)
-            .Select(token => token.Trim())
-            .Where(token => token.Length > 0)
-            .ToArray();
-
-        List<ParseError> errors = new List<ParseError>();
-        List<string> positionalArguments = new List<string>();
-        Dictionary<string, List<string>> rawValues =
-            new Dictionary<string, List<string>>(_comparer);
-
-        ReadTokens(tokens, rawValues, positionalArguments, errors);
-
-        // Asking for help wins over everything else. Without this, "myapp --help" on an
-        // application with a required option would report that option as missing, which
-        // is not a useful answer to someone asking what the options are.
-        bool helpRequested =
-            _helpOption != null && rawValues.ContainsKey(_helpOption.Name);
-
-        if (helpRequested)
-        {
-            return new SchemaParseResult(this,
-                new Dictionary<string, IReadOnlyList<object>>(_comparer),
-                positionalArguments, new List<ParseError>(), _comparer, true);
-        }
-
-        CheckRepeats(rawValues, errors);
-        CheckRequired(rawValues, errors);
-
-        Dictionary<string, IReadOnlyList<object>> values =
-            ConvertValues(rawValues, errors);
-
-        return new SchemaParseResult(
-            this, values, positionalArguments, errors, _comparer, false);
-    }
+            .Select(token => new ArgumentToken(token.Text.Trim(), token.WasQuoted))
+            .Where(token => token.Text.Length > 0 || token.WasQuoted)
+            .ToArray());
 
     /// <summary>
     /// The help text, built from the same declarations that parse the arguments, so the
@@ -200,12 +173,45 @@ public sealed class ArgumentSchema
 
     #region Private Methods
 
-    private void ReadTokens(string[] tokens, Dictionary<string, List<string>> rawValues,
-        List<string> positionalArguments, List<ParseError> errors)
+    private SchemaParseResult ParseTokens(ArgumentToken[] tokens)
+    {
+        List<ParseError> errors = new List<ParseError>();
+        List<string> positionalArguments = new List<string>();
+        Dictionary<string, List<string>> rawValues =
+            new Dictionary<string, List<string>>(_comparer);
+
+        ReadTokens(tokens, rawValues, positionalArguments, errors);
+
+        // Asking for help wins over everything else. Without this, "myapp --help" on an
+        // application with a required option would report that option as missing, which
+        // is not a useful answer to someone asking what the options are.
+        bool helpRequested =
+            _helpOption != null && rawValues.ContainsKey(_helpOption.Name);
+
+        if (helpRequested)
+        {
+            return new SchemaParseResult(this,
+                new Dictionary<string, IReadOnlyList<object>>(_comparer),
+                positionalArguments, new List<ParseError>(), _comparer, true);
+        }
+
+        CheckRepeats(rawValues, errors);
+        CheckRequired(rawValues, errors);
+
+        Dictionary<string, IReadOnlyList<object>> values =
+            ConvertValues(rawValues, errors);
+
+        return new SchemaParseResult(
+            this, values, positionalArguments, errors, _comparer, false);
+    }
+
+    private void ReadTokens(ArgumentToken[] tokens,
+        Dictionary<string, List<string>> rawValues, List<string> positionalArguments,
+        List<ParseError> errors)
     {
         for (int index = 0; index < tokens.Length; index++)
         {
-            string token = tokens[index];
+            string token = tokens[index].Text;
 
             // "--timeout=60" and "--timeout:60". The name has to be declared, so a value
             // that merely contains a separator ("C:\build") is not mistaken for one.
@@ -216,6 +222,15 @@ public sealed class ArgumentSchema
 
                 if (inlineOption != null)
                 {
+                    // "--timeout=" left the value out. "--name=\"\"" gave an empty one on
+                    // purpose, and the quotes are the only way to tell the two apart.
+                    if (inlineValue.Length == 0 && !tokens[index].WasQuoted)
+                    {
+                        errors.Add(MissingValue(inlineOption, inlineName));
+
+                        continue;
+                    }
+
                     Record(rawValues, inlineOption, inlineValue);
 
                     continue;
@@ -246,17 +261,16 @@ public sealed class ArgumentSchema
                 // rather than that the option should swallow it. "--output --verbose"
                 // is a mistake worth reporting, not a request to write to a file
                 // called "--verbose". Use "--output=-x" for a value that looks like one.
-                if (index + 1 >= tokens.Length || IsOptionShaped(tokens[index + 1]))
+                if (index + 1 >= tokens.Length || IsOptionShaped(tokens[index + 1].Text))
                 {
-                    errors.Add(new ParseError(ParseErrorKind.MissingValue, option.Name, null,
-                        $"Option '{token}' needs a value."));
+                    errors.Add(MissingValue(option, token));
 
                     continue;
                 }
 
                 index++;
 
-                Record(rawValues, option, tokens[index]);
+                Record(rawValues, option, tokens[index].Text);
 
                 continue;
             }
@@ -387,6 +401,12 @@ public sealed class ArgumentSchema
     private ParseError UnknownOption(string name) =>
         new ParseError(ParseErrorKind.UnknownOption, name, null,
             $"Unknown option '{name}'.");
+
+    // Named by the option as the user typed it, so "-o" is reported as "-o" and not as
+    // "--output".
+    private static ParseError MissingValue(OptionDefinition option, string nameAsTyped) =>
+        new ParseError(ParseErrorKind.MissingValue, option.Name, null,
+            $"Option '{nameAsTyped}' needs a value.");
 
     /// <summary>
     /// True when the argument looks like an option name rather than a value, which is what
