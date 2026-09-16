@@ -45,7 +45,7 @@ jobs:
       run: dotnet pack ArgumentParser/ArgumentParser.csproj --configuration Release --no-build --output ./artifacts
 
     # The version is read back off the file NuGet produced, so it is already normalized
-    # (a <Version> of 1.1.1.0 packs as 1.1.1). The .snupkg does not match *.nupkg.
+    # (a <Version> of 2.0.0.0 packs as 2.0.0). The .snupkg does not match *.nupkg.
     - name: Read package version
       id: package
       run: |
