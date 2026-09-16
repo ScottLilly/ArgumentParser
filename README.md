@@ -129,7 +129,9 @@ bool verbose = result.ValueOf<bool>("--verbose");
 IReadOnlyList<string> outputs = result.AllValuesOf<string>("--output");
 ```
 
-`string`, `bool`, `int`, `long`, `decimal`, `double` and any enum can be declared. Enums are matched by name, ignoring case; the numeric form is rejected, since it would let any number match any enum.
+`string`, `bool`, `int`, `long`, `decimal`, `double` and any enum can be declared. Enums are matched by name, with the same comparer that matches option names, so by default `--type=sales` finds `Sales`; the numeric form is rejected, since it would let any number match any enum.
+
+A declaration that could never work is rejected as you make it. An option cannot be both required and given a default, since the default could only apply when the option is left out and that is already an error. Every name and alias has to start with one of the option prefixes, which is checked at `Build()` because `WithOptionPrefixes` may come after the declarations.
 
 `ValueOf` falls back to the declared default when the option was not given. `IsSet` tells you whether it was given at all, which is how to tell "not given" from "given the same value as the default":
 
@@ -335,6 +337,19 @@ ArgumentSchema schema =
 
 Assert.IsTrue(schema.Parse("--verbose").Success);
 Assert.AreEqual(ParseErrorKind.UnknownOption, schema.Parse("--Verbose").Errors[0].Kind);
+```
+
+The comparer governs enum values too, so a schema that is strict about the case of its option names is strict about the case of its values:
+
+```csharp
+ArgumentSchema schema =
+    ArgumentSchema.Create()
+        .WithComparer(StringComparer.Ordinal)
+        .Option<EmployeeType>("--type")
+        .Build();
+
+Assert.IsTrue(schema.Parse("--type=Sales").Success);
+Assert.AreEqual(ParseErrorKind.UnconvertibleValue, schema.Parse("--type=sales").Errors[0].Kind);
 ```
 
 This changed in 2.0.0. Before then, names were always matched case-sensitively.

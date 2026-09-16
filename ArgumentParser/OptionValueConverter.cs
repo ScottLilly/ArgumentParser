@@ -31,7 +31,11 @@ internal static class OptionValueConverter
     /// The converted value, or null when the text cannot be read as the target type. None
     /// of the supported types converts to null, so null is unambiguous as "no".
     /// </summary>
-    internal static object? Convert(string? text, Type targetType)
+    /// <param name="text">The raw value, as it was typed.</param>
+    /// <param name="targetType">The type the option was declared with.</param>
+    /// <param name="comparer">The schema's comparer, which matches an enum value's name the same way it matches an option's name.</param>
+    internal static object? Convert(string? text, Type targetType,
+        IEqualityComparer<string> comparer)
     {
         if (text == null)
         {
@@ -82,22 +86,25 @@ internal static class OptionValueConverter
 
         if (targetType.IsEnum)
         {
-            return ConvertEnum(text, targetType);
+            return ConvertEnum(text, targetType, comparer);
         }
 
         return null;
     }
 
     /// <summary>
-    /// Matches a declared name, ignoring case. Names only, deliberately: Enum.TryParse also
-    /// accepts the numeric form, so "3" would match any enum at all, and it accepts a comma
-    /// separated list, so "Sales,Marketing" would silently combine two values.
+    /// Matches a declared name with the schema's comparer, so a schema that is strict about
+    /// the case of its option names is strict about the case of its enum values too. Names
+    /// only, deliberately: Enum.TryParse also accepts the numeric form, so "3" would match
+    /// any enum at all, and it accepts a comma separated list, so "Sales,Marketing" would
+    /// silently combine two values.
     /// </summary>
-    private static object? ConvertEnum(string text, Type enumType)
+    private static object? ConvertEnum(string text, Type enumType,
+        IEqualityComparer<string> comparer)
     {
         foreach (string name in Enum.GetNames(enumType))
         {
-            if (string.Equals(name, text, StringComparison.OrdinalIgnoreCase))
+            if (comparer.Equals(name, text))
             {
                 return Enum.Parse(enumType, name);
             }

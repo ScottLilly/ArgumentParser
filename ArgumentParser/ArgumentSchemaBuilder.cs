@@ -2,7 +2,9 @@ namespace ArgumentParser;
 
 /// <summary>
 /// Builds an ArgumentSchema. A declaration that cannot work is rejected as it is made,
-/// rather than at Build or at parse time, so the exception points at the offending call.
+/// rather than at parse time, so the exception points at the offending call. The one
+/// exception is the check that every name carries an option prefix, which has to wait for
+/// Build because WithOptionPrefixes may be called after the options are declared.
 /// </summary>
 internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
 {
@@ -121,6 +123,8 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
     // was, and the second Build then found "--help" already taken and left it out.
     public ArgumentSchema Build()
     {
+        CheckNamesArePrefixed();
+
         OptionDefinition? helpOption = _includeHelpOption ? MakeHelpOption() : null;
 
         IEnumerable<OptionDefinition> options = helpOption == null
@@ -129,6 +133,34 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
 
         return new ArgumentSchema(options, _argSeparators, _keyValueSeparators,
             _optionPrefixes, _comparer, _applicationName, _description, _usage, helpOption);
+    }
+
+    // A name with no prefix is never option-shaped, so "x" on its own would be read as a
+    // positional argument while "x=1" matched the option. That is not a useful way to
+    // declare anything, and there is no configuration that makes it one.
+    //
+    // The automatic help option is left out deliberately. It is the library's declaration
+    // rather than the caller's, and it is matched by name before anything asks what shape
+    // it is, so "--help" still works on a schema built with WithOptionPrefixes("/").
+    private void CheckNamesArePrefixed()
+    {
+        foreach (OptionDefinition option in _options)
+        {
+            foreach (string name in option.AllNames())
+            {
+                bool hasPrefix = _optionPrefixes.Any(prefix =>
+                    name.Length > prefix.Length
+                    && name.StartsWith(prefix, StringComparison.Ordinal));
+
+                if (hasPrefix)
+                {
+                    continue;
+                }
+
+                throw new ArgumentException(
+                    $"'{name}' does not start with an option prefix ({string.Join(", ", _optionPrefixes)}), so it could never be matched as an option.");
+            }
+        }
     }
 
     // Goes last, so it reads as the final line of the help text. Skipped entirely if the
@@ -152,6 +184,17 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
         if (string.IsNullOrWhiteSpace(option.Name))
         {
             throw new ArgumentException("An option needs a name.", nameof(option));
+        }
+
+        // A required option is an error when it is left out, which is the only time a
+        // default could apply, so the two together describe something that cannot happen.
+        // Ignoring the default silently would leave the declaration reading as though it
+        // meant something.
+        if (option.IsRequired && option.DefaultValue != null)
+        {
+            throw new ArgumentException(
+                $"Option '{option.Name}' is required, so its default value of '{option.DefaultValue}' could never be used. Declare it as required, or give it a default, but not both.",
+                nameof(option));
         }
 
         foreach (string name in option.AllNames())

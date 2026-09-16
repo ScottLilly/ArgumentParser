@@ -381,7 +381,8 @@ public sealed class ArgumentSchema
 
             foreach (string raw in entry.Value)
             {
-                object? value = OptionValueConverter.Convert(raw, option.ValueType);
+                object? value =
+                    OptionValueConverter.Convert(raw, option.ValueType, _comparer);
 
                 if (value != null)
                 {

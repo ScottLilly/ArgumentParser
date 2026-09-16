@@ -384,6 +384,26 @@ public class TestArgumentSchema
         Assert.AreEqual(EmployeeType.Production, result.ValueOf<EmployeeType>("--type"));
     }
 
+    // Issue #62. Enum values were matched with OrdinalIgnoreCase whatever the schema's
+    // comparer was, so a schema that was strict about the case of its option names was not
+    // strict about the case of its values.
+    [TestMethod]
+    public void Parse_EnumOptionOnAnOrdinalSchema_MatchesOnlyTheDeclaredCasing()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .WithComparer(StringComparer.Ordinal)
+                .Option<EmployeeType>("--type")
+                .Build();
+
+        Assert.IsTrue(schema.Parse("--type=Sales").Success);
+
+        SchemaParseResult result = schema.Parse("--type=sales");
+
+        Assert.IsFalse(result.Success);
+        Assert.AreEqual(ParseErrorKind.UnconvertibleValue, result.Errors[0].Kind);
+    }
+
     #endregion
 
     #region Name matching
@@ -515,6 +535,98 @@ public class TestArgumentSchema
                 .Option<string>("--output", alias: "-o")
                 .Flag("-o")
                 .Build());
+    }
+
+    // Issue #61. A required option is an error when it is left out, which is the only time
+    // a default could apply, so the two together describe something that cannot happen.
+    [TestMethod]
+    public void Option_RequiredWithADefault_Throws()
+    {
+        ArgumentException exception = Assert.ThrowsExactly<ArgumentException>(() =>
+            ArgumentSchema.Create()
+                .Option<string>("--output", required: true, defaultValue: "a.json"));
+
+        Assert.IsTrue(exception.Message.Contains("could never be used"), exception.Message);
+    }
+
+    [TestMethod]
+    public void Option_RequiredWithADefaultOfTheTypesOwnZero_AlsoThrows()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            ArgumentSchema.Create().Option<int>("--timeout", required: true, defaultValue: 0));
+    }
+
+    [TestMethod]
+    public void Option_RequiredWithNoDefault_IsFine()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create().Option<string>("--output", required: true).Build();
+
+        Assert.IsTrue(schema.Options[0].IsRequired);
+        Assert.IsNull(schema.Options[0].DefaultValue);
+    }
+
+    // Issue #61. An unprefixed name is never option-shaped, so "output" alone would be read
+    // as a positional argument while "output=a.json" matched the option.
+    [TestMethod]
+    public void Build_OptionNameWithNoPrefix_Throws()
+    {
+        ArgumentException exception = Assert.ThrowsExactly<ArgumentException>(() =>
+            ArgumentSchema.Create().Option<string>("output").Build());
+
+        Assert.IsTrue(exception.Message.Contains("'output'"), exception.Message);
+    }
+
+    [TestMethod]
+    public void Build_AliasWithNoPrefix_Throws()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            ArgumentSchema.Create().Option<string>("--output", alias: "o").Build());
+    }
+
+    [TestMethod]
+    public void Build_FlagNameWithNoPrefix_Throws()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            ArgumentSchema.Create().Flag("verbose").Build());
+    }
+
+    // The check runs at Build rather than at the declaration, because the prefixes can be
+    // configured after the options are declared.
+    [TestMethod]
+    public void Build_NameMatchingAPrefixConfiguredAfterwards_IsFine()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .Option<string>("/output")
+                .WithOptionPrefixes("/")
+                .Build();
+
+        Assert.IsTrue(schema.Parse("/output=a.json").Success);
+    }
+
+    [TestMethod]
+    public void Build_NameMatchingTheDefaultPrefixesAfterTheyAreReplaced_Throws()
+    {
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            ArgumentSchema.Create()
+                .Option<string>("--output")
+                .WithOptionPrefixes("/")
+                .Build());
+    }
+
+    // The automatic help option is the library's declaration, not the caller's, and it is
+    // matched by name before anything asks what shape it is.
+    [TestMethod]
+    public void Build_CustomPrefixes_DoesNotRejectTheAutomaticHelpOption()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .WithOptionPrefixes("/")
+                .Flag("/verbose")
+                .Build();
+
+        Assert.IsTrue(schema.Parse("--help").HelpRequested);
     }
 
     [TestMethod]

@@ -378,6 +378,21 @@ public class TestReadmeSamples
             schema.Parse("--Verbose").Errors[0].Kind);
     }
 
+    // "The comparer governs enum values too"
+    [TestMethod]
+    public void SchemaWithOrdinalComparerIsStrictAboutEnumValueCasingToo()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .WithComparer(StringComparer.Ordinal)
+                .Option<EmployeeType>("--type")
+                .Build();
+
+        Assert.IsTrue(schema.Parse("--type=Sales").Success);
+        Assert.AreEqual(ParseErrorKind.UnconvertibleValue,
+            schema.Parse("--type=sales").Errors[0].Kind);
+    }
+
     #endregion
 
     #region A named argument's key has to carry a prefix
