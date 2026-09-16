@@ -32,8 +32,10 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
+    # ContinuousIntegrationBuild makes the build deterministic and the Source Link paths
+    # portable, so the .snupkg matches what a debugger fetches from GitHub.
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
 
     - name: Test
       run: dotnet test --configuration Release --no-build --verbosity normal
@@ -44,8 +46,8 @@ jobs:
     - name: Pack
       run: dotnet pack ArgumentParser/ArgumentParser.csproj --configuration Release --no-build --output ./artifacts
 
-    # The version is read back off the file NuGet produced, so it is already normalized
-    # (a <Version> of 2.0.0.0 packs as 2.0.0). The .snupkg does not match *.nupkg.
+    # The version is read back off the file NuGet produced, so it is exactly what was
+    # packed. The .snupkg does not match *.nupkg.
     - name: Read package version
       id: package
       run: |
@@ -71,8 +73,9 @@ jobs:
         fi
         echo "Tag $TAG is free."
 
-    # Pulls the matching "## Version x.y.z" section out of RELEASE_NOTES.md. Falls back to
-    # GitHub's generated notes if there is no such section, or no such file.
+    # Pulls the matching "## Version x.y.z" section out of RELEASE_NOTES.md, the same file
+    # the csproj packs into the NuGet release notes. Falls back to GitHub's generated notes
+    # if there is no such section, or no such file.
     - name: Extract release notes
       id: notes
       run: |

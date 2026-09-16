@@ -9,8 +9,8 @@ namespace Tests.ArgumentParser;
 ///
 /// Each test is named after the README heading it comes from. A failure here means the
 /// README and the code disagree, so fix whichever of the two is wrong rather than only
-/// the test. The samples are written with xUnit assertions, since that is what the README
-/// shows, so they are translated to MSTest here but otherwise left alone.
+/// the test. The samples use MSTest assertions, the same as this project, so they can be
+/// pasted here as they are.
 /// </summary>
 [TestClass]
 public class TestReadmeSamples
@@ -312,6 +312,59 @@ public class TestReadmeSamples
 
         Assert.AreEqual(@"C:\Test\My Project.sln",
             parsedArguments.NamedArguments["--solution"]);
+    }
+
+    #endregion
+
+    #region IsSet
+
+    // "IsSet tells you whether it was given at all", against the schema declared under
+    // "Declaring your options".
+    [TestMethod]
+    public void IsSetTellsNotGivenFromGivenTheSameValueAsTheDefault()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .Option<string>("--output", alias: "-o", required: true, repeatable: true,
+                    description: "Where to write the report")
+                .Option<int>("--timeout", defaultValue: 60,
+                    description: "Seconds before the run is abandoned")
+                .Flag("--verbose", alias: "-v")
+                .Build();
+
+        Assert.IsFalse(schema.Parse("--output=a.json").IsSet("--timeout"));
+        Assert.IsTrue(schema.Parse("--output=a.json --timeout=60").IsSet("--timeout"));
+    }
+
+    #endregion
+
+    #region Names are matched without regard to case (schema)
+
+    // "The schema takes the same comparer through WithComparer"
+    [TestMethod]
+    public void SchemaWithOrdinalComparerReportsTheOtherCasingAsUnknown()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .WithComparer(StringComparer.Ordinal)
+                .Flag("--verbose")
+                .Build();
+
+        Assert.IsTrue(schema.Parse("--verbose").Success);
+        Assert.AreEqual(ParseErrorKind.UnknownOption,
+            schema.Parse("--Verbose").Errors[0].Kind);
+    }
+
+    #endregion
+
+    #region A bare Windows path becomes a named argument
+
+    [TestMethod]
+    public void ABareWindowsPathBecomesANamedArgument()
+    {
+        var parsedArguments = new Parser().Parse(@"C:\Test\file.txt");
+
+        Assert.AreEqual(@"\Test\file.txt", parsedArguments.NamedArguments["C"]);
     }
 
     #endregion

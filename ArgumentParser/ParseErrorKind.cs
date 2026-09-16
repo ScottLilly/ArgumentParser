@@ -12,7 +12,8 @@ public enum ParseErrorKind
     UnknownOption,
 
     /// <summary>
-    /// A declared option that takes a value was the last argument, so no value followed it.
+    /// A declared option that takes a value had none: it was the last argument, or the
+    /// argument after it was another option.
     /// </summary>
     MissingValue,
 

@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 namespace ArgumentParser;
 
 /// <summary>
-/// The parsed arguments from string, or string aray, input.
+/// The parsed arguments from string, or string array, input.
 /// </summary>
 public sealed class ParsedArguments
 {

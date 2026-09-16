@@ -10,8 +10,19 @@
     <!-- Nullable reference types need C# 8. netstandard2.0 would otherwise default to 7.3. -->
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-	<IncludeSymbols>true</IncludeSymbols>
-	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- Source Link is built into the SDK. These make the symbols usable from the .snupkg:
+         PublishRepositoryUrl writes the commit into the package, and EmbedUntrackedSources
+         covers any generated file the debugger would otherwise fail to find. release.yml
+         adds ContinuousIntegrationBuild=true so the CI build is deterministic. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <!-- Checks at pack time that every target framework exposes the same public API.
+         PackageValidationBaselineVersion is deliberately not set: 2.0.0 breaks the 1.x API
+         on purpose. Set it to 2.0.0 once that version has shipped, so the next release is
+         checked against it. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
     <PackageId>ScottLilly.$(AssemblyName)</PackageId>
     <Title>Argument Parser</Title>
     <Authors>Scott Lilly</Authors>
@@ -19,35 +30,23 @@
     <Copyright>2023-2026, Scott Lilly</Copyright>
     <RepositoryUrl>https://github.com/ScottLilly/ArgumentParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageOutputPath></PackageOutputPath>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/ScottLilly/ArgumentParser</PackageProjectUrl>
     <PackageIcon>logo_128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>
-Breaking changes:
-- Named argument names are matched case-insensitively by default, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to the Parser constructor, or WithComparer on the fluent builder, for the 1.x behavior.
-- Numbers are classified with the invariant culture, so the same command line means the same thing on every machine. An argument counts as a number only if it is digits with an optional leading sign and, for decimals, a single period. Group separators, trailing signs and exponents ("1,234", "5-", "1e5") are string arguments.
-- A key/value argument splits at the leftmost separator rather than the first separator in the configured order, so "--out=C:\build" splits at the "=" and keeps "C:\build" whole.
-- Double quotes group a value and are removed from it, so a value can contain a separator: --solution="C:\My Project.sln". There is no escape sequence, so a value cannot contain a double quote.
-- EnumArgumentsOfType requires an enum type. Calling it with a non-enum struct is now a compile error rather than a run time ArgumentException.
-- Null input returns an empty result instead of throwing.
-- A fluent builder with no separators configured uses the same defaults as the Parser constructor, instead of matching no named arguments.
-- FluentArgumentParser's parameterless constructor is private. Create() was always the intended entry point, and it and every chaining method return the interface, so "new FluentArgumentParser()" was a way in that nothing else used.
-
-Added:
-- XML doc comments, shipped as an .xml beside each DLL, so the whole public API shows its documentation in IntelliSense instead of bare signatures.
-- Nullable reference type annotations on the whole public API, so a consumer building with nullable enabled gets real compiler help instead of seeing everything as oblivious. The optional constructor parameters now read as deliberately optional, and Parse says in its signature that it accepts null.
-- A .NET 8 target alongside netstandard2.0. The package now ships lib/netstandard2.0 and lib/net8.0, and netstandard2.0 is still there for reach.
-- A declared option schema. ArgumentSchema.Create() declares each option's name, aliases, type, default, and whether it is required or repeatable, and schema.Parse returns a SchemaParseResult with converted values. Because the options are declared, a value can be written either way round ("--timeout 30" as well as "--timeout=30"), a flag needs no value, and enums are converted by name. The untyped Parser is unchanged and still suits a free-form string.
-- Help and usage text generated from the declared options, so it cannot drift from what the application actually accepts. "--help" and "-h" are recognized automatically and reported through the result rather than written to the console, so the caller decides where the text goes. Descriptions wrap at a fixed width rather than the console's, so redirected output is stable.
-- Error reporting for a schema parse. Unknown options, missing values, unconvertible values, missing required options and unexpected repeats are all reported, and every problem is collected rather than only the first. Read them from SchemaParseResult.Errors, or use ParseOrThrow for an ArgumentParseException carrying the same list.
-- ParsedArguments.AllValuesOf(name) returns every value given for a repeated name, in the order given. NamedArguments still holds the last one.
-- An optional comparer for named argument names, on both Parser constructors and as WithComparer on the fluent builder.
-    </PackageReleaseNotes>
     <PackageTags>arguments; parser; cli; command line</PackageTags>
-    <Version>2.0.0.0</Version>
-    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <Version>2.0.0</Version>
+  </PropertyGroup>
+
+  <!-- RELEASE_NOTES.md is the one place release notes live. The "## Version x.y.z" section
+       matching <Version> is cut out of it here, and release.yml cuts the same section out
+       for the GitHub Release, so the two cannot disagree. Backticks quote the text because
+       it contains both kinds of quotation mark. -->
+  <PropertyGroup>
+    <ReleaseNotesText>$([System.IO.File]::ReadAllText("$(MSBuildThisFileDirectory)../RELEASE_NOTES.md"))</ReleaseNotesText>
+    <ReleaseNotesText>$([System.Text.RegularExpressions.Regex]::Replace(`$(ReleaseNotesText)`, `(?s)^.*?## Version $(Version)\s*`, ``))</ReleaseNotesText>
+    <ReleaseNotesText>$([System.Text.RegularExpressions.Regex]::Replace(`$(ReleaseNotesText)`, `(?s)\s*## Version .*$`, ``))</ReleaseNotesText>
+    <PackageReleaseNotes>$(ReleaseNotesText)</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -66,14 +65,9 @@ Added:
          default None glob this used to amend is not populated, so Update matched nothing
          and the icon was left out of the package (NU5046). -->
     <None Include="logo_128.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-	<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
-  </ItemGroup>
-	
 </Project>

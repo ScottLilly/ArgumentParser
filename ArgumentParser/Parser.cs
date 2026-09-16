@@ -34,7 +34,7 @@ public class Parser
     /// Initializes a new instance of the Parser class with default argument and key/value separators.
     /// </summary>
     /// <param name="argSeparators">(Optional) array of characters that indicate a separator between arguments. Default value is { ' ' }</param>
-    /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
+    /// <param name="keyValueSeparators">(Optional) array of characters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
     /// <param name="comparer">(Optional) comparer used to match named argument names. Defaults to StringComparer.OrdinalIgnoreCase, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to match names case-sensitively.</param>
     public Parser(char[]? argSeparators = null, char[]? keyValueSeparators = null,
         IEqualityComparer<string>? comparer = null)
@@ -54,7 +54,7 @@ public class Parser
     /// Initializes a new instance of the Parser class with default argument and key/value separators.
     /// </summary>
     /// <param name="argSeparators">(Optional) array of strings that indicate a separator between arguments. Default value is { " " }</param>
-    /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
+    /// <param name="keyValueSeparators">(Optional) array of characters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
     /// <param name="comparer">(Optional) comparer used to match named argument names. Defaults to StringComparer.OrdinalIgnoreCase, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to match names case-sensitively.</param>
     public Parser(string[]? argSeparators, char[]? keyValueSeparators = null,
         IEqualityComparer<string>? comparer = null)
@@ -82,7 +82,7 @@ public class Parser
     /// survives as one argument instead of being split again.
     /// </summary>
     /// <param name="args">Array of string arguments to parse. May be null.</param>
-    /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
+    /// <returns>ParsedArguments object, populated with values from the arguments parameter</returns>
     public ParsedArguments Parse(string?[]? args)
     {
         // Concatenate the array of strings into a single string,
@@ -106,7 +106,7 @@ public class Parser
     /// from it. There is no escape sequence, so a value cannot contain a double quote.
     /// </summary>
     /// <param name="arguments">String containing arguments to parse. May be null.</param>
-    /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
+    /// <returns>ParsedArguments object, populated with values from the arguments parameter</returns>
     public ParsedArguments Parse(string? arguments)
     {
         // Null is treated as no arguments rather than as an error, so a Main(string[] args)
