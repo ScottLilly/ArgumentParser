@@ -182,6 +182,38 @@ public class TestReadmeSamples
         CollectionAssert.AreEqual(new[] { "-5" }, result.PositionalArguments.ToArray());
     }
 
+    // "Help text writes itself", including the block showing exactly what HelpText() gives.
+    [TestMethod]
+    public void HelpTextWritesItself()
+    {
+        ArgumentSchema schema =
+            ArgumentSchema.Create()
+                .WithDescription("Checks a solution and writes a report.")
+                .WithUsage("myapp <input> [options]")
+                .Option<string>("--output", alias: "-o", required: true, repeatable: true,
+                    description: "Where to write the report", valueName: "path")
+                .Option<int>("--timeout", defaultValue: 60,
+                    description: "Seconds before the run is abandoned")
+                .Flag("--verbose", alias: "-v", description: "Print each step as it runs")
+                .Build();
+
+        SchemaParseResult result = schema.Parse(new[] { "--help" });
+
+        Assert.IsTrue(result.HelpRequested);
+
+        string expected = string.Join(Environment.NewLine,
+            "Checks a solution and writes a report.",
+            "",
+            "Usage: myapp <input> [options]",
+            "",
+            "  -o, --output <path>  Where to write the report (required, repeatable)",
+            "      --timeout <int>  Seconds before the run is abandoned (default: 60)",
+            "  -v, --verbose        Print each step as it runs",
+            "  -h, --help           Show this help");
+
+        Assert.AreEqual(expected, schema.HelpText());
+    }
+
     #endregion
 
     #region Named argument keys keep their prefix

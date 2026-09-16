@@ -35,12 +35,22 @@ namespace ArgumentParser
         /// </summary>
         public IReadOnlyList<string> PositionalArguments { get; }
 
+        /// <summary>
+        /// True when "--help" was asked for. Nothing else is reported when it is, since a
+        /// request to see the options is not the moment to complain that one is missing.
+        /// Print ArgumentSchema.HelpText() and stop.
+        /// </summary>
+        public bool HelpRequested { get; }
+
         internal SchemaParseResult(ArgumentSchema schema,
             IDictionary<string, IReadOnlyList<object>> values,
             IEnumerable<string> positionalArguments,
             IEnumerable<ParseError> errors,
-            IEqualityComparer<string> comparer)
+            IEqualityComparer<string> comparer,
+            bool helpRequested)
         {
+            HelpRequested = helpRequested;
+
             _schema = schema;
             _values = new ReadOnlyDictionary<string, IReadOnlyList<object>>(
                 values.ToDictionary(kvp => kvp.Key, kvp => kvp.Value, comparer));

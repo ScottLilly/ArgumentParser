@@ -20,16 +20,20 @@ namespace ArgumentParser
         private string[] _keyValueSeparators = s_defaultKeyValueSeparators;
         private string[] _optionPrefixes = s_defaultOptionPrefixes;
         private IEqualityComparer<string> _comparer = StringComparer.OrdinalIgnoreCase;
+        private string _applicationName;
+        private string _description;
+        private string _usage;
+        private bool _includeHelpOption = true;
 
         public IArgumentSchemaBuilder Option<T>(string name, string alias = null,
             bool required = false, bool repeatable = false, T defaultValue = default,
-            string description = null) =>
+            string description = null, string valueName = null) =>
             Option(name, alias == null ? new string[0] : new[] { alias },
-                required, repeatable, defaultValue, description);
+                required, repeatable, defaultValue, description, valueName);
 
         public IArgumentSchemaBuilder Option<T>(string name, string[] aliases,
             bool required = false, bool repeatable = false, T defaultValue = default,
-            string description = null)
+            string description = null, string valueName = null)
         {
             if (!OptionValueConverter.IsSupported(typeof(T)))
             {
@@ -39,7 +43,7 @@ namespace ArgumentParser
             }
 
             return Add(new OptionDefinition(name, aliases, typeof(T), false, required,
-                repeatable, defaultValue, description));
+                repeatable, defaultValue, description, valueName));
         }
 
         public IArgumentSchemaBuilder Flag(string name, string alias = null,
@@ -49,7 +53,7 @@ namespace ArgumentParser
         public IArgumentSchemaBuilder Flag(string name, string[] aliases,
             string description = null) =>
             Add(new OptionDefinition(name, aliases, typeof(bool), true, false, false, false,
-                description));
+                description, null));
 
         public IArgumentSchemaBuilder WithArgumentSeparators(params string[] argumentSeparators)
         {
@@ -84,9 +88,61 @@ namespace ArgumentParser
             return this;
         }
 
-        public ArgumentSchema Build() =>
-            new ArgumentSchema(_options, _argSeparators, _keyValueSeparators, _optionPrefixes,
-                _comparer);
+        public IArgumentSchemaBuilder WithApplicationName(string applicationName)
+        {
+            _applicationName = applicationName;
+
+            return this;
+        }
+
+        public IArgumentSchemaBuilder WithDescription(string description)
+        {
+            _description = description;
+
+            return this;
+        }
+
+        public IArgumentSchemaBuilder WithUsage(string usage)
+        {
+            _usage = usage;
+
+            return this;
+        }
+
+        public IArgumentSchemaBuilder WithoutHelpOption()
+        {
+            _includeHelpOption = false;
+
+            return this;
+        }
+
+        public ArgumentSchema Build()
+        {
+            OptionDefinition helpOption = _includeHelpOption ? AddHelpOption() : null;
+
+            return new ArgumentSchema(_options, _argSeparators, _keyValueSeparators,
+                _optionPrefixes, _comparer, _applicationName, _description, _usage, helpOption);
+        }
+
+        // Added last, so it reads as the final line of the help text. Skipped entirely if the
+        // caller has already used either name for something of their own, since taking it from
+        // them silently would be worse than having no automatic help.
+        private OptionDefinition AddHelpOption()
+        {
+            string[] names = { "--help", "-h" };
+
+            if (names.Any(name => _options.Any(o => o.AllNames().Contains(name, _comparer))))
+            {
+                return null;
+            }
+
+            OptionDefinition helpOption = new OptionDefinition("--help", new[] { "-h" },
+                typeof(bool), true, false, false, false, "Show this help", null);
+
+            _options.Add(helpOption);
+
+            return helpOption;
+        }
 
         private IArgumentSchemaBuilder Add(OptionDefinition option)
         {

@@ -166,6 +166,45 @@ Assert.Equal(new[] { "input.txt", "other.txt" }, result.PositionalArguments);
 
 An argument counts as option-shaped if it starts with `--` or `-` (change that with `WithOptionPrefixes`) and is not a negative number, so `-5` is a positional argument rather than an unknown option.
 
+### Help text writes itself
+`--help` and `-h` are recognized automatically and reported through the result, so nothing is printed unless you print it. The text is built from the same declarations that parse the arguments, so the two cannot disagree:
+
+```csharp
+ArgumentSchema schema =
+    ArgumentSchema.Create()
+        .WithDescription("Checks a solution and writes a report.")
+        .WithUsage("myapp <input> [options]")
+        .Option<string>("--output", alias: "-o", required: true, repeatable: true,
+            description: "Where to write the report", valueName: "path")
+        .Option<int>("--timeout", defaultValue: 60,
+            description: "Seconds before the run is abandoned")
+        .Flag("--verbose", alias: "-v", description: "Print each step as it runs")
+        .Build();
+
+SchemaParseResult result = schema.Parse(args);
+
+if (result.HelpRequested)
+{
+    Console.WriteLine(schema.HelpText());
+    return 0;
+}
+```
+
+`schema.HelpText()` gives you:
+
+```
+Checks a solution and writes a report.
+
+Usage: myapp <input> [options]
+
+  -o, --output <path>  Where to write the report (required, repeatable)
+      --timeout <int>  Seconds before the run is abandoned (default: 60)
+  -v, --verbose        Print each step as it runs
+  -h, --help           Show this help
+```
+
+Asking for help suppresses everything else, so `myapp --help` does not complain that `--output` is missing. Descriptions wrap at a fixed width (80 by default, `HelpText(100)` to change it) rather than at the console's, so redirected output is stable. If you want the names for yourself, use `WithoutHelpOption()`.
+
 The untyped `Parser` is unchanged and is still the right tool when you are parsing a free-form string rather than a known set of options.
 
 ## Things worth knowing

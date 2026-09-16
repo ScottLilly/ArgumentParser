@@ -17,14 +17,17 @@ namespace ArgumentParser
         /// <param name="repeatable">(Optional) true when the option may be given more than once.</param>
         /// <param name="defaultValue">(Optional) the value used when the option is not given.</param>
         /// <param name="description">(Optional) what the option does, for error messages and help text.</param>
+        /// <param name="valueName">(Optional) what to call the value in help text, such as "path" for "--output path". Defaults to something derived from T.</param>
         IArgumentSchemaBuilder Option<T>(string name, string alias = null, bool required = false,
-            bool repeatable = false, T defaultValue = default, string description = null);
+            bool repeatable = false, T defaultValue = default, string description = null,
+            string valueName = null);
 
         /// <summary>
         /// Declares an option that takes a value and answers to several names.
         /// </summary>
         IArgumentSchemaBuilder Option<T>(string name, string[] aliases, bool required = false,
-            bool repeatable = false, T defaultValue = default, string description = null);
+            bool repeatable = false, T defaultValue = default, string description = null,
+            string valueName = null);
 
         /// <summary>
         /// Declares an option that takes no value and is true by its presence alone. Its value
@@ -59,6 +62,28 @@ namespace ArgumentParser
         /// Pass StringComparer.Ordinal to match names case-sensitively.
         /// </summary>
         IArgumentSchemaBuilder WithComparer(IEqualityComparer<string> comparer);
+
+        /// <summary>
+        /// The application's name, used to build the usage line in help text.
+        /// </summary>
+        IArgumentSchemaBuilder WithApplicationName(string applicationName);
+
+        /// <summary>
+        /// A one-line summary of what the application does, shown above the usage line.
+        /// </summary>
+        IArgumentSchemaBuilder WithDescription(string description);
+
+        /// <summary>
+        /// The whole usage line, for an application whose positional arguments matter
+        /// ("myapp &lt;input&gt; [options]"). Replaces the line built from the application name.
+        /// </summary>
+        IArgumentSchemaBuilder WithUsage(string usage);
+
+        /// <summary>
+        /// Leaves out the automatic "--help" option, for an application that handles help
+        /// itself or has a use for those names.
+        /// </summary>
+        IArgumentSchemaBuilder WithoutHelpOption();
 
         /// <summary>
         /// Finishes the declaration and returns the schema to parse with.

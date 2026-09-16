@@ -29,6 +29,7 @@ Breaking changes:
 
 Added:
 - A declared option schema. ArgumentSchema.Create() declares each option's name, aliases, type, default, and whether it is required or repeatable, and schema.Parse returns a SchemaParseResult with converted values. Because the options are declared, a value can be written either way round ("--timeout 30" as well as "--timeout=30"), a flag needs no value, and enums are converted by name. The untyped Parser is unchanged and still suits a free-form string.
+- Help and usage text generated from the declared options, so it cannot drift from what the application actually accepts. "--help" and "-h" are recognized automatically and reported through the result rather than written to the console, so the caller decides where the text goes. Descriptions wrap at a fixed width rather than the console's, so redirected output is stable.
 - Error reporting for a schema parse. Unknown options, missing values, unconvertible values, missing required options and unexpected repeats are all reported, and every problem is collected rather than only the first. Read them from SchemaParseResult.Errors, or use ParseOrThrow for an ArgumentParseException carrying the same list.
 - ParsedArguments.AllValuesOf(name) returns every value given for a repeated name, in the order given. NamedArguments still holds the last one.
 - An optional comparer for named argument names, on both Parser constructors and as WithComparer on the fluent builder.

@@ -45,23 +45,50 @@ namespace ArgumentParser
         private readonly string[] _keyValueSeparators;
         private readonly string[] _optionPrefixes;
         private readonly IEqualityComparer<string> _comparer;
+        private readonly OptionDefinition _helpOption;
 
         #endregion
 
         /// <summary>
-        /// Every declared option, in the order it was declared.
+        /// Every declared option, in the order it was declared. The automatic help option, if
+        /// there is one, is last.
         /// </summary>
         public IReadOnlyList<OptionDefinition> Options { get; }
 
+        /// <summary>
+        /// The application's name, for the usage line. Null when none was given.
+        /// </summary>
+        public string ApplicationName { get; }
+
+        /// <summary>
+        /// A one-line summary of what the application does. Null when none was given.
+        /// </summary>
+        public string Description { get; }
+
+        /// <summary>
+        /// The usage line, either as given or built from the application name. Null when
+        /// neither was given.
+        /// </summary>
+        public string Usage { get; }
+
         internal ArgumentSchema(IEnumerable<OptionDefinition> options, string[] argSeparators,
             string[] keyValueSeparators, string[] optionPrefixes,
-            IEqualityComparer<string> comparer)
+            IEqualityComparer<string> comparer, string applicationName, string description,
+            string usage, OptionDefinition helpOption)
         {
             Options = new ReadOnlyCollection<OptionDefinition>(options.ToList());
             _argSeparators = argSeparators;
             _keyValueSeparators = keyValueSeparators;
             _optionPrefixes = optionPrefixes;
             _comparer = comparer;
+            _helpOption = helpOption;
+
+            ApplicationName = applicationName;
+            Description = description;
+            Usage = usage
+                ?? (string.IsNullOrWhiteSpace(applicationName)
+                    ? null
+                    : applicationName + " [options]");
 
             _optionsByName = new Dictionary<string, OptionDefinition>(comparer);
 
@@ -111,6 +138,20 @@ namespace ArgumentParser
                 new Dictionary<string, List<string>>(_comparer);
 
             ReadTokens(tokens, rawValues, positionalArguments, errors);
+
+            // Asking for help wins over everything else. Without this, "myapp --help" on an
+            // application with a required option would report that option as missing, which
+            // is not a useful answer to someone asking what the options are.
+            bool helpRequested =
+                _helpOption != null && rawValues.ContainsKey(_helpOption.Name);
+
+            if (helpRequested)
+            {
+                return new SchemaParseResult(this,
+                    new Dictionary<string, IReadOnlyList<object>>(_comparer),
+                    positionalArguments, new List<ParseError>(), _comparer, true);
+            }
+
             CheckRepeats(rawValues, errors);
             CheckRequired(rawValues, errors);
 
@@ -118,8 +159,16 @@ namespace ArgumentParser
                 ConvertValues(rawValues, errors);
 
             return new SchemaParseResult(
-                this, values, positionalArguments, errors, _comparer);
+                this, values, positionalArguments, errors, _comparer, false);
         }
+
+        /// <summary>
+        /// The help text, built from the same declarations that parse the arguments, so the
+        /// two cannot disagree. Nothing is written anywhere: the caller decides where it goes,
+        /// which keeps this testable and usable from something that is not a console.
+        /// </summary>
+        /// <param name="width">Column to wrap descriptions at. Fixed rather than taken from the console, so redirected output is stable.</param>
+        public string HelpText(int width = 80) => HelpTextFormatter.Format(this, width);
 
         /// <summary>
         /// Parses against the declared options, throwing if anything is wrong instead of
@@ -308,7 +357,7 @@ namespace ArgumentParser
         {
             if (type.IsEnum)
             {
-                return "one of " + string.Join(", ", Enum.GetNames(type));
+                return "one of " + string.Join("|", Enum.GetNames(type));
             }
 
             if (type == typeof(int) || type == typeof(long))
