@@ -17,7 +17,20 @@
     <PackageProjectUrl>https://github.com/ScottLilly/ArgumentParser</PackageProjectUrl>
     <PackageIcon>logo_128.png</PackageIcon>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Fix issue with command line key/value arguments, which were already split in app's static Main method.</PackageReleaseNotes>
+    <PackageReleaseNotes>
+Breaking changes:
+- Named argument names are matched case-insensitively by default, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to the Parser constructor, or WithComparer on the fluent builder, for the 1.x behavior.
+- Numbers are classified with the invariant culture, so the same command line means the same thing on every machine. An argument counts as a number only if it is digits with an optional leading sign and, for decimals, a single period. Group separators, trailing signs and exponents ("1,234", "5-", "1e5") are string arguments.
+- A key/value argument splits at the leftmost separator rather than the first separator in the configured order, so "--out=C:\build" splits at the "=" and keeps "C:\build" whole.
+- Double quotes group a value and are removed from it, so a value can contain a separator: --solution="C:\My Project.sln". There is no escape sequence, so a value cannot contain a double quote.
+- EnumArgumentsOfType requires an enum type. Calling it with a non-enum struct is now a compile error rather than a run time ArgumentException.
+- Null input returns an empty result instead of throwing.
+- A fluent builder with no separators configured uses the same defaults as the Parser constructor, instead of matching no named arguments.
+
+Added:
+- ParsedArguments.AllValuesOf(name) returns every value given for a repeated name, in the order given. NamedArguments still holds the last one.
+- An optional comparer for named argument names, on both Parser constructors and as WithComparer on the fluent builder.
+    </PackageReleaseNotes>
     <PackageTags>arguments; parser; cli; command line</PackageTags>
     <Version>2.0.0.0</Version>
     <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>

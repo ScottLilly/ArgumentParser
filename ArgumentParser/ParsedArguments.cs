@@ -39,6 +39,8 @@ namespace ArgumentParser
         /// Parsed named arguments, where the key is the argument name and the value is the argument value.
         /// A name given more than once holds the last value, which is what most command line
         /// applications do with a repeated option. Use AllValuesOf to reach the earlier values.
+        /// Names are matched with the parser's comparer, which ignores case unless the caller
+        /// asked for something else, so "--output" and "--Output" are the same argument.
         /// </summary>
         public IReadOnlyDictionary<string, string> NamedArguments { get; }
 
@@ -86,7 +88,8 @@ namespace ArgumentParser
             IEnumerable<decimal> decimalArguments,
             IEnumerable<string> stringArguments,
             IDictionary<string, string> namedArguments,
-            IDictionary<string, List<string>> allNamedArgumentValues)
+            IDictionary<string, List<string>> allNamedArgumentValues,
+            IEqualityComparer<string> comparer)
         {
             Arguments = new ReadOnlyCollection<string>(arguments.ToList());
             IntegerArguments = new ReadOnlyCollection<int>(integerArguments.ToList());
@@ -98,7 +101,8 @@ namespace ArgumentParser
                 new ReadOnlyDictionary<string, IReadOnlyList<string>>(
                     allNamedArgumentValues.ToDictionary(
                         kvp => kvp.Key,
-                        kvp => (IReadOnlyList<string>)new ReadOnlyCollection<string>(kvp.Value)));
+                        kvp => (IReadOnlyList<string>)new ReadOnlyCollection<string>(kvp.Value),
+                        comparer));
         }
     }
 }

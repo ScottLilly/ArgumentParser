@@ -10,6 +10,7 @@ namespace ArgumentParser
         // User HashSets for storing separators, to avoid duplicates
         private readonly HashSet<string> _argumentSeparators = new HashSet<string>();
         private readonly HashSet<char> _keyValueSeparators = new HashSet<char>();
+        private IEqualityComparer<string> _comparer;
 
         #endregion
 
@@ -75,6 +76,13 @@ namespace ArgumentParser
             return this;
         }
 
+        public IFluentArgumentParserBuilder WithComparer(IEqualityComparer<string> comparer)
+        {
+            _comparer = comparer;
+
+            return this;
+        }
+
         #endregion
 
         #region Execution methods
@@ -100,7 +108,8 @@ namespace ArgumentParser
         {
             return new Parser(
                 _argumentSeparators.Count > 0 ? _argumentSeparators.ToArray() : null,
-                _keyValueSeparators.Count > 0 ? _keyValueSeparators.ToArray() : null);
+                _keyValueSeparators.Count > 0 ? _keyValueSeparators.ToArray() : null,
+                _comparer);
         }
 
         #endregion
@@ -119,6 +128,11 @@ namespace ArgumentParser
         // Key/Value separators can only be added as single characters
         IFluentArgumentParserBuilder AddKeyValueSeparator(char keyValueSeparator);
         IFluentArgumentParserBuilder AddKeyValueSeparators(char[] keyValueSeparators);
+
+        // Comparer used to match named argument names. Defaults to
+        // StringComparer.OrdinalIgnoreCase. Pass StringComparer.Ordinal to match names
+        // case-sensitively.
+        IFluentArgumentParserBuilder WithComparer(IEqualityComparer<string> comparer);
 
         ParsedArguments Parse(string arguments);
         ParsedArguments Parse(string[] arguments);
