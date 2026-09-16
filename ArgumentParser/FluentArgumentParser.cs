@@ -16,17 +16,11 @@ namespace ArgumentParser;
 /// </example>
 public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
 {
-    #region Private variables
-
     // User HashSets for storing separators, to avoid duplicates
     private readonly HashSet<string> _argumentSeparators = new HashSet<string>();
     private readonly HashSet<char> _keyValueSeparators = new HashSet<char>();
     private IEqualityComparer<string>? _comparer;
     private string[]? _namedArgumentPrefixes;
-
-    #endregion
-
-    #region Instantiating method
 
     // Private, so Create is the only way in. The chaining methods return the interface
     // rather than the class, and nothing works differently if a caller holds the concrete
@@ -43,10 +37,6 @@ public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
     {
         return new FluentArgumentParser();
     }
-
-    #endregion
-
-    #region Chaining methods
 
     /// <inheritdoc />
     public IFluentArgumentParserBuilder AddArgumentSeparator(char argumentSeparator)
@@ -122,10 +112,6 @@ public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
         return this;
     }
 
-    #endregion
-
-    #region Execution methods
-
     /// <inheritdoc />
     public ParsedArguments Parse(string? arguments)
     {
@@ -138,10 +124,6 @@ public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
         return BuildParser().Parse(arguments);
     }
 
-    #endregion
-
-    #region Private methods
-
     // A separator set that was never added to is passed as null rather than as an empty
     // array, so Parser falls back to its own defaults. An empty array would silently
     // match nothing, making Create().Parse(...) behave differently from new Parser().
@@ -153,6 +135,4 @@ public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
             _comparer,
             _namedArgumentPrefixes);
     }
-
-    #endregion
 }

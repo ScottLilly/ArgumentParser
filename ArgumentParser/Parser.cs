@@ -8,8 +8,6 @@ namespace ArgumentParser;
 /// </summary>
 public sealed class Parser
 {
-    #region Private variables
-
     // "Constants" for default argument and key/value separators
     private static readonly ReadOnlyCollection<string> s_defaultArgSeparators =
         new ReadOnlyCollection<string>(new string[] { " " });
@@ -28,10 +26,6 @@ public sealed class Parser
     private readonly string[] _keyValueSeparators;
     private readonly string[] _namedArgumentPrefixes;
     private readonly IEqualityComparer<string> _comparer;
-
-    #endregion
-
-    #region Constructors
 
     /// <summary>
     /// Initializes a new instance of the Parser class with default argument and key/value separators.
@@ -80,10 +74,6 @@ public sealed class Parser
 
         _comparer = comparer ?? s_defaultComparer;
     }
-
-    #endregion
-
-    #region Public Methods
 
     /// <summary>
     /// Parses an array of string arguments into a ParsedArguments object.
@@ -199,10 +189,6 @@ public sealed class Parser
             _comparer);
     }
 
-    #endregion
-
-    #region Private Methods
-
     private bool TryParseNamedArgument(ArgumentToken token,
         out KeyValuePair<string, string> namedArgument)
     {
@@ -241,6 +227,4 @@ public sealed class Parser
             (key.Length > prefix.Length
                 && key.StartsWith(prefix, StringComparison.Ordinal))
             || string.Equals(precedingSeparator, prefix, StringComparison.Ordinal));
-
-    #endregion
 }

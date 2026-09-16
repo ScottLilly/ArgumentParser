@@ -10,22 +10,54 @@ namespace ArgumentParser;
 /// </summary>
 internal static class OptionValueConverter
 {
-    private const NumberStyles IntegerStyles = NumberStyles.Integer;
+    private const NumberStyles INTEGER_STYLES = NumberStyles.Integer;
 
-    private const NumberStyles FractionalStyles =
+    private const NumberStyles FRACTIONAL_STYLES =
         NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint;
+
+    /// <summary>
+    /// Every type an option can be declared with, and how each one reads its text. This is
+    /// the single answer to both "is that type allowed" and "what does that text mean", so
+    /// the two cannot disagree and a new type is added in one place.
+    /// <para>
+    /// An enum is the one supported type not in here. There is no fixed set of enum types
+    /// to key by, and converting one needs the schema's comparer, which a table keyed only
+    /// by type has nowhere to put.
+    /// </para>
+    /// </summary>
+    private static readonly Dictionary<Type, Func<string, object?>> s_converters =
+        new Dictionary<Type, Func<string, object?>>
+        {
+            [typeof(string)] = text => text,
+            [typeof(bool)] = text =>
+                bool.TryParse(text, out bool value) ? (object)value : null,
+            [typeof(int)] = text =>
+                int.TryParse(text, INTEGER_STYLES, CultureInfo.InvariantCulture,
+                    out int value)
+                    ? (object)value
+                    : null,
+            [typeof(long)] = text =>
+                long.TryParse(text, INTEGER_STYLES, CultureInfo.InvariantCulture,
+                    out long value)
+                    ? (object)value
+                    : null,
+            [typeof(decimal)] = text =>
+                decimal.TryParse(text, FRACTIONAL_STYLES, CultureInfo.InvariantCulture,
+                    out decimal value)
+                    ? (object)value
+                    : null,
+            [typeof(double)] = text =>
+                double.TryParse(text, FRACTIONAL_STYLES, CultureInfo.InvariantCulture,
+                    out double value)
+                    ? (object)value
+                    : null
+        };
 
     /// <summary>
     /// True when the type can be the target of a declared option.
     /// </summary>
     internal static bool IsSupported(Type type) =>
-        type == typeof(string)
-        || type == typeof(bool)
-        || type == typeof(int)
-        || type == typeof(long)
-        || type == typeof(decimal)
-        || type == typeof(double)
-        || type.IsEnum;
+        s_converters.ContainsKey(type) || type.IsEnum;
 
     /// <summary>
     /// The converted value, or null when the text cannot be read as the target type. None
@@ -42,54 +74,14 @@ internal static class OptionValueConverter
             return null;
         }
 
-        if (targetType == typeof(string))
-        {
-            return text;
-        }
-
-        if (targetType == typeof(bool))
-        {
-            return bool.TryParse(text, out bool parsedBool) ? (object)parsedBool : null;
-        }
-
-        if (targetType == typeof(int))
-        {
-            return int.TryParse(text, IntegerStyles, CultureInfo.InvariantCulture,
-                out int parsedInt)
-                ? (object)parsedInt
-                : null;
-        }
-
-        if (targetType == typeof(long))
-        {
-            return long.TryParse(text, IntegerStyles, CultureInfo.InvariantCulture,
-                out long parsedLong)
-                ? (object)parsedLong
-                : null;
-        }
-
-        if (targetType == typeof(decimal))
-        {
-            return decimal.TryParse(text, FractionalStyles, CultureInfo.InvariantCulture,
-                out decimal parsedDecimal)
-                ? (object)parsedDecimal
-                : null;
-        }
-
-        if (targetType == typeof(double))
-        {
-            return double.TryParse(text, FractionalStyles, CultureInfo.InvariantCulture,
-                out double parsedDouble)
-                ? (object)parsedDouble
-                : null;
-        }
-
         if (targetType.IsEnum)
         {
             return ConvertEnum(text, targetType, comparer);
         }
 
-        return null;
+        return s_converters.TryGetValue(targetType, out Func<string, object?>? converter)
+            ? converter(text)
+            : null;
     }
 
     /// <summary>

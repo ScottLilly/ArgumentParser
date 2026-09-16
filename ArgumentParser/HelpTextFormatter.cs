@@ -8,12 +8,12 @@ namespace ArgumentParser;
 /// </summary>
 internal static class HelpTextFormatter
 {
-    private const int Indent = 2;
-    private const int GapBeforeDescription = 2;
+    private const int INDENT = 2;
+    private const int GAP_BEFORE_DESCRIPTION = 2;
 
     // Past this, a long option would squeeze descriptions into a ribbon, so its
     // description moves to the next line instead.
-    private const int MaxNameColumn = 30;
+    private const int MAX_NAME_COLUMN = 30;
 
     internal static string Format(ArgumentSchema schema, int width)
     {
@@ -52,15 +52,15 @@ internal static class HelpTextFormatter
         List<string> nameParts = schema.Options.Select(NamePart).ToList();
 
         int aliasColumn = aliasParts.Max(part => part.Length);
-        int nameColumn = Math.Min(nameParts.Max(part => part.Length), MaxNameColumn);
+        int nameColumn = Math.Min(nameParts.Max(part => part.Length), MAX_NAME_COLUMN);
 
         int descriptionColumn =
-            Indent + aliasColumn + (aliasColumn > 0 ? 1 : 0) + nameColumn
-            + GapBeforeDescription;
+            INDENT + aliasColumn + (aliasColumn > 0 ? 1 : 0) + nameColumn
+            + GAP_BEFORE_DESCRIPTION;
 
         for (int index = 0; index < schema.Options.Count; index++)
         {
-            string left = new string(' ', Indent)
+            string left = new string(' ', INDENT)
                 + (aliasColumn > 0
                     ? aliasParts[index].PadRight(aliasColumn) + " "
                     : string.Empty)
@@ -79,7 +79,7 @@ internal static class HelpTextFormatter
 
             // A name too long for the column gets the line to itself, rather than pushing
             // every other description across to meet it.
-            if (left.Length > descriptionColumn - GapBeforeDescription)
+            if (left.Length > descriptionColumn - GAP_BEFORE_DESCRIPTION)
             {
                 yield return left;
             }
