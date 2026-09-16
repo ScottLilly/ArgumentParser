@@ -93,6 +93,81 @@ Assert.Equal("value1", parsedArguments.NamedArguments["solution"]);
 Assert.Equal("value2", parsedArguments.NamedArguments["s"]);
 ```
 
+## Declaring your options
+
+Everything above parses whatever it finds and hands you buckets of values. If your application knows what its options are, declare them instead and the parser can do considerably more: catch a misspelled option, convert values to the type you asked for, apply defaults, enforce required options, and accept a value written either way round.
+
+```csharp
+ArgumentSchema schema =
+    ArgumentSchema.Create()
+        .Option<string>("--output", alias: "-o", required: true, repeatable: true,
+            description: "Where to write the report")
+        .Option<int>("--timeout", defaultValue: 60,
+            description: "Seconds before the run is abandoned")
+        .Flag("--verbose", alias: "-v")
+        .Build();
+
+SchemaParseResult result = schema.Parse(args);
+
+if (!result.Success)
+{
+    Console.Error.WriteLine(result.ErrorText());
+    return 1;
+}
+
+int timeout = result.ValueOf<int>("--timeout");
+bool verbose = result.ValueOf<bool>("--verbose");
+IReadOnlyList<string> outputs = result.AllValuesOf<string>("--output");
+```
+
+`string`, `bool`, `int`, `long`, `decimal`, `double` and any enum can be declared. Enums are matched by name, ignoring case; the numeric form is rejected, since it would let any number match any enum.
+
+### A declaration changes how arguments are read
+Because the schema knows `--timeout` takes a value, you no longer have to configure a separator for it. These are all the same:
+
+```csharp
+schema.Parse("--timeout 30");
+schema.Parse("--timeout=30");
+schema.Parse("--timeout:30");
+```
+
+A flag needs no value at all, and an option whose value was left out is reported rather than swallowing the next option:
+
+```csharp
+// "--output --verbose" is a mistake, not a request to write to a file called "--verbose".
+SchemaParseResult result = schema.Parse("--output --verbose");
+
+Assert.False(result.Success);
+Assert.Equal(ParseErrorKind.MissingValue, result.Errors[0].Kind);
+```
+
+### Everything wrong is reported at once
+A command line application usually wants to print every problem rather than making the user fix them one run at a time, so `Parse` collects them all:
+
+```csharp
+SchemaParseResult result = schema.Parse("--timeout=abc --verbse");
+
+// Unknown option '--verbse'.
+// Option '--output' is required.
+// Option '--timeout' needs a whole number, but was given 'abc'.
+Assert.Equal(3, result.Errors.Count);
+```
+
+The kinds are `UnknownOption`, `MissingValue`, `UnconvertibleValue`, `MissingRequiredOption` and `OptionNotRepeatable`. If you would rather handle one exception than check `Success`, use `ParseOrThrow`, which throws an `ArgumentParseException` carrying the same list.
+
+### Arguments that are not options
+Anything that is not option-shaped is handed back untouched, in order, so positional arguments still work:
+
+```csharp
+SchemaParseResult result = schema.Parse("input.txt --output=a.json other.txt");
+
+Assert.Equal(new[] { "input.txt", "other.txt" }, result.PositionalArguments);
+```
+
+An argument counts as option-shaped if it starts with `--` or `-` (change that with `WithOptionPrefixes`) and is not a negative number, so `-5` is a positional argument rather than an unknown option.
+
+The untyped `Parser` is unchanged and is still the right tool when you are parsing a free-form string rather than a known set of options.
+
 ## Things worth knowing
 
 ### Named argument keys keep their prefix

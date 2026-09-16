@@ -86,6 +86,104 @@ public class TestReadmeSamples
 
     #endregion
 
+    #region Declaring your options
+
+    private static ArgumentSchema ReadmeSchema() =>
+        ArgumentSchema.Create()
+            .Option<string>("--output", alias: "-o", required: true, repeatable: true,
+                description: "Where to write the report")
+            .Option<int>("--timeout", defaultValue: 60,
+                description: "Seconds before the run is abandoned")
+            .Flag("--verbose", alias: "-v")
+            .Build();
+
+    // The opening sample of the section, minus the Console.Error call and the return.
+    [TestMethod]
+    public void DeclaringYourOptions()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        SchemaParseResult result = schema.Parse(new[] { "--output", "a.json", "--verbose" });
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+
+        int timeout = result.ValueOf<int>("--timeout");
+        bool verbose = result.ValueOf<bool>("--verbose");
+        IReadOnlyList<string> outputs = result.AllValuesOf<string>("--output");
+
+        Assert.AreEqual(60, timeout);
+        Assert.IsTrue(verbose);
+        CollectionAssert.AreEqual(new[] { "a.json" }, outputs.ToArray());
+    }
+
+    // "A declaration changes how arguments are read"
+    [TestMethod]
+    public void ADeclarationChangesHowArgumentsAreRead()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        foreach (string arguments in
+                 new[] { "--timeout 30", "--timeout=30", "--timeout:30" })
+        {
+            Assert.AreEqual(30, schema.Parse(arguments).ValueOf<int>("--timeout"), arguments);
+        }
+    }
+
+    [TestMethod]
+    public void AnOptionWhoseValueWasLeftOutIsReported()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        SchemaParseResult result = schema.Parse("--output --verbose");
+
+        Assert.IsFalse(result.Success);
+        Assert.AreEqual(ParseErrorKind.MissingValue, result.Errors[0].Kind);
+    }
+
+    // "Everything wrong is reported at once", including the three messages in the comment.
+    [TestMethod]
+    public void EverythingWrongIsReportedAtOnce()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        SchemaParseResult result = schema.Parse("--timeout=abc --verbse");
+
+        Assert.AreEqual(3, result.Errors.Count);
+        CollectionAssert.AreEquivalent(
+            new[]
+            {
+                "Unknown option '--verbse'.",
+                "Option '--output' is required.",
+                "Option '--timeout' needs a whole number, but was given 'abc'."
+            },
+            result.Errors.Select(e => e.Message).ToArray());
+    }
+
+    // "Arguments that are not options"
+    [TestMethod]
+    public void ArgumentsThatAreNotOptions()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        SchemaParseResult result = schema.Parse("input.txt --output=a.json other.txt");
+
+        CollectionAssert.AreEqual(
+            new[] { "input.txt", "other.txt" }, result.PositionalArguments.ToArray());
+    }
+
+    [TestMethod]
+    public void ANegativeNumberIsPositionalRatherThanAnUnknownOption()
+    {
+        ArgumentSchema schema = ReadmeSchema();
+
+        SchemaParseResult result = schema.Parse("--output=a.json -5");
+
+        Assert.IsTrue(result.Success, result.ErrorText());
+        CollectionAssert.AreEqual(new[] { "-5" }, result.PositionalArguments.ToArray());
+    }
+
+    #endregion
+
     #region Named argument keys keep their prefix
 
     // The claim the section opens with, that looking the key up without its prefix throws.
