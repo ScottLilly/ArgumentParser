@@ -3,6 +3,9 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <Nullable>enable</Nullable>
+    <!-- Packs an .xml beside each DLL, so consumers get the doc comments in IntelliSense.
+         Also turns on CS1591 for any undocumented public member. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Nullable reference types need C# 8. netstandard2.0 would otherwise default to 7.3. -->
     <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
@@ -29,8 +32,10 @@ Breaking changes:
 - EnumArgumentsOfType requires an enum type. Calling it with a non-enum struct is now a compile error rather than a run time ArgumentException.
 - Null input returns an empty result instead of throwing.
 - A fluent builder with no separators configured uses the same defaults as the Parser constructor, instead of matching no named arguments.
+- FluentArgumentParser's parameterless constructor is private. Create() was always the intended entry point, and it and every chaining method return the interface, so "new FluentArgumentParser()" was a way in that nothing else used.
 
 Added:
+- XML doc comments, shipped as an .xml beside each DLL, so the whole public API shows its documentation in IntelliSense instead of bare signatures.
 - Nullable reference type annotations on the whole public API, so a consumer building with nullable enabled gets real compiler help instead of seeing everything as oblivious. The optional constructor parameters now read as deliberately optional, and Parse says in its signature that it accepts null.
 - A .NET 8 target alongside netstandard2.0. The package now ships lib/netstandard2.0 and lib/net8.0, and netstandard2.0 is still there for reach.
 - A declared option schema. ArgumentSchema.Create() declares each option's name, aliases, type, default, and whether it is required or repeatable, and schema.Parse returns a SchemaParseResult with converted values. Because the options are declared, a value can be written either way round ("--timeout 30" as well as "--timeout=30"), a flag needs no value, and enums are converted by name. The untyped Parser is unchanged and still suits a free-form string.

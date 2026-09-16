@@ -1,8 +1,22 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace ArgumentParser
 {
+    /// <summary>
+    /// Builds and runs a Parser through a chain of calls, for callers who find that easier to
+    /// read than the constructor's optional parameters. Start one with Create.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// ParsedArguments parsedArguments =
+    ///     FluentArgumentParser
+    ///         .Create()
+    ///         .AddArgumentSeparators(new[] { "--", "-" })
+    ///         .AddKeyValueSeparators(new[] { ':', '|' })
+    ///         .Parse(@"--solution:value1 -s|value2");
+    /// </code>
+    /// </example>
     public class FluentArgumentParser : IFluentArgumentParserBuilder
     {
         #region Private variables
@@ -16,6 +30,17 @@ namespace ArgumentParser
 
         #region Instantiating method
 
+        // Private, so Create is the only way in. The chaining methods return the interface
+        // rather than the class, and nothing works differently if a caller holds the concrete
+        // type, so there is no reason for a second entry point that skips the factory.
+        private FluentArgumentParser()
+        {
+        }
+
+        /// <summary>
+        /// Starts a chain of calls that ends in Parse.
+        /// </summary>
+        /// <returns>A builder to add separators to, then parse with.</returns>
         public static IFluentArgumentParserBuilder Create()
         {
             return new FluentArgumentParser();
@@ -25,13 +50,15 @@ namespace ArgumentParser
 
         #region Chaining methods
 
+        /// <inheritdoc />
         public IFluentArgumentParserBuilder AddArgumentSeparator(char argumentSeparator)
         {
             _argumentSeparators.Add(argumentSeparator.ToString());
-            
+
             return this;
         }
 
+        /// <inheritdoc />
         public IFluentArgumentParserBuilder AddArgumentSeparator(string argumentSeparator)
         {
             _argumentSeparators.Add(argumentSeparator);
@@ -39,6 +66,7 @@ namespace ArgumentParser
             return this;
         }
 
+        /// <inheritdoc />
         public IFluentArgumentParserBuilder AddArgumentSeparators(char[] argumentSeparators)
         {
             foreach (char separator in argumentSeparators)
@@ -49,6 +77,7 @@ namespace ArgumentParser
             return this;
         }
 
+        /// <inheritdoc />
         public IFluentArgumentParserBuilder AddArgumentSeparators(string[] argumentSeparator)
         {
             foreach (string separator in argumentSeparator)
@@ -59,6 +88,7 @@ namespace ArgumentParser
             return this;
         }
 
+        /// <inheritdoc />
         public IFluentArgumentParserBuilder AddKeyValueSeparator(char keyValueSeparator)
         {
             _keyValueSeparators.Add(keyValueSeparator);
@@ -66,6 +96,7 @@ namespace ArgumentParser
             return this;
         }
 
+        /// <inheritdoc />
         public IFluentArgumentParserBuilder AddKeyValueSeparators(char[] keyValueSeparators)
         {
             foreach (char separator in keyValueSeparators)
@@ -76,6 +107,7 @@ namespace ArgumentParser
             return this;
         }
 
+        /// <inheritdoc />
         public IFluentArgumentParserBuilder WithComparer(IEqualityComparer<string>? comparer)
         {
             _comparer = comparer;
@@ -87,11 +119,13 @@ namespace ArgumentParser
 
         #region Execution methods
 
+        /// <inheritdoc />
         public ParsedArguments Parse(string? arguments)
         {
             return BuildParser().Parse(arguments);
         }
 
+        /// <inheritdoc />
         public ParsedArguments Parse(string?[]? arguments)
         {
             return BuildParser().Parse(arguments);
@@ -113,28 +147,5 @@ namespace ArgumentParser
         }
 
         #endregion
-    }
-
-    public interface IFluentArgumentParserBuilder
-    {
-        // Argument separators can be added as single characters or strings,
-        // to allow for multi-character separators if needed.
-        IFluentArgumentParserBuilder AddArgumentSeparator(char argumentSeparator);
-        IFluentArgumentParserBuilder AddArgumentSeparators(char[] argumentSeparators);
-
-        IFluentArgumentParserBuilder AddArgumentSeparator(string argumentSeparator);
-        IFluentArgumentParserBuilder AddArgumentSeparators(string[] argumentSeparator);
-
-        // Key/Value separators can only be added as single characters
-        IFluentArgumentParserBuilder AddKeyValueSeparator(char keyValueSeparator);
-        IFluentArgumentParserBuilder AddKeyValueSeparators(char[] keyValueSeparators);
-
-        // Comparer used to match named argument names. Defaults to
-        // StringComparer.OrdinalIgnoreCase. Pass StringComparer.Ordinal to match names
-        // case-sensitively.
-        IFluentArgumentParserBuilder WithComparer(IEqualityComparer<string>? comparer);
-
-        ParsedArguments Parse(string? arguments);
-        ParsedArguments Parse(string?[]? arguments);
     }
 }
