@@ -16,6 +16,8 @@ public interface IArgumentSchemaBuilder
     /// <param name="defaultValue">(Optional) the value used when the option is not given. Pass a T; leaving it out declares no default, so the help text claims none.</param>
     /// <param name="description">(Optional) what the option does, for error messages and help text.</param>
     /// <param name="valueName">(Optional) what to call the value in help text, such as "path" for "--output path". Defaults to something derived from T.</param>
+    /// <exception cref="NotSupportedException">T is not one of the supported types.</exception>
+    /// <exception cref="ArgumentException">The name is blank, or the name or an alias is already declared.</exception>
     IArgumentSchemaBuilder Option<T>(string name, string? alias = null, bool required = false,
         bool repeatable = false, OptionDefault<T> defaultValue = default,
         string? description = null, string? valueName = null);

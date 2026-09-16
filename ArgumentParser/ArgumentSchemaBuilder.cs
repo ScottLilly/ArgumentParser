@@ -33,11 +33,12 @@ internal class ArgumentSchemaBuilder : IArgumentSchemaBuilder
         OptionDefault<T> defaultValue = default, string? description = null,
         string? valueName = null)
     {
+        // NotSupportedException rather than ArgumentException: the problem is the type
+        // argument, and there is no parameter to name.
         if (!OptionValueConverter.IsSupported(typeof(T)))
         {
-            throw new ArgumentException(
-                $"{typeof(T).Name} is not a supported option type. Use string, bool, int, long, decimal, double, or an enum.",
-                nameof(T));
+            throw new NotSupportedException(
+                $"{typeof(T).Name} is not a supported option type. Use string, bool, int, long, decimal, double, or an enum.");
         }
 
         return Add(new OptionDefinition(name, aliases, typeof(T), false, required,

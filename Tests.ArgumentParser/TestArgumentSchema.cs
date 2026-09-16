@@ -437,8 +437,11 @@ public class TestArgumentSchema
     [TestMethod]
     public void Option_UnsupportedType_Throws()
     {
-        Assert.ThrowsExactly<ArgumentException>(() =>
+        NotSupportedException exception = Assert.ThrowsExactly<NotSupportedException>(() =>
             ArgumentSchema.Create().Option<DateTime>("--when").Build());
+
+        Assert.IsTrue(exception.Message.StartsWith("DateTime is not a supported option type"));
+        Assert.IsFalse(exception.Message.Contains("Parameter"));
     }
 
     // Issue #53. An unconstrained T? default collapsed to default(T) for a value type, so
