@@ -1,8 +1,8 @@
 # ScottLilly.ArgumentParser (NuGet package)
-<img align="left" width="75" height="75" style="color:white" src="https://github.com/ScottLilly/ArgumentParser/blob/master/ArgumentParser/logo_128.png">
-A lightweight C# NuGet package for parsing a string, or array of strings (such as command-line arguments) into a ParsedArguments object.
+<img align="left" width="75" height="75" style="color:white" src="https://raw.githubusercontent.com/ScottLilly/ArgumentParser/master/ArgumentParser/logo_128.png">
+A lightweight C# NuGet package for parsing a string, or an array of strings such as the one handed to <code>Main</code>, into something your program can use.
 <br/><br/>
-It categorizes arguments into their types, including all arguments, integers, decimals, strings, named key/value pairs, and enum-based arguments.
+It works two ways: hand it a free-form string and it sorts the arguments into integers, decimals, strings, named key/value pairs and enum values, or declare the options your application accepts and it converts them, applies defaults, reports what does not match, and writes your <code>--help</code> text.
 
 ## Project Overview
 ![Build Status](https://github.com/ScottLilly/ArgumentParser/actions/workflows/ci.yml/badge.svg)
@@ -13,17 +13,26 @@ It categorizes arguments into their types, including all arguments, integers, de
 ## Installation
 Install the package via NuGet Package Manager or use the following command in the Package Manager Console:
 
-```
+```powershell
 Install-Package ScottLilly.ArgumentParser
 ```
 Or via the .NET CLI:
-```
+```bash
 dotnet add package ScottLilly.ArgumentParser
 ```
 
-## How to use
-Instantiate a `Parser` object to parse strings or arrays of strings into a `ParsedArguments` object, 
-passing in an optional array of characters or strings to use to separate arguments in the string and/or to separate key/value pair arguments.
+## Which one you want
+There are two entry points, and they suit different jobs.
+
+| | Use it when |
+|---|---|
+| `Parser` | You are parsing a free-form string and want whatever is in it, sorted by type. Nothing is declared ahead of time, so nothing can be reported as wrong. |
+| `ArgumentSchema` | Your application has a known set of options. Declare them and you get type conversion, defaults, required checks, aliases, unknown-option detection and generated `--help`. |
+
+`Parser` came first and is unchanged. [Declaring your options](#declaring-your-options) covers the schema.
+
+## How to use `Parser`
+Instantiate a `Parser` to turn a string, or an array of strings, into a `ParsedArguments` object. The constructor optionally takes the characters or strings that separate one argument from the next, the characters that separate a name from its value, and a comparer for matching names.
 
 ### Code samples:
 
@@ -275,8 +284,9 @@ Assert.Equal(@"C:\Test\My Project.sln", parsedArguments.NamedArguments["--soluti
 There is no escape sequence, so a value cannot itself contain a double quote.
 
 ## Requirements
-- .NET Standard 2.0 or higher
+- .NET Standard 2.0 or .NET 8.0. The package ships both, so it runs on .NET Framework 4.6.1 and later, .NET Core 2.0 and later, and .NET 5 and later.
 - No external dependencies.
+- The public API is annotated for nullable reference types, and ships XML doc comments.
 
 ## Contributing
 Contributions are welcome. Please submit issues or pull requests to the GitHub repository.
