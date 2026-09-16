@@ -39,8 +39,8 @@ namespace ArgumentParser
         /// <param name="argSeparators">(Optional) array of characters that indicate a separator between arguments. Default value is { ' ' }</param>
         /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
         /// <param name="comparer">(Optional) comparer used to match named argument names. Defaults to StringComparer.OrdinalIgnoreCase, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to match names case-sensitively.</param>
-        public Parser(char[] argSeparators = null, char[] keyValueSeparators = null,
-            IEqualityComparer<string> comparer = null)
+        public Parser(char[]? argSeparators = null, char[]? keyValueSeparators = null,
+            IEqualityComparer<string>? comparer = null)
         {
             _argSeparators =
                 argSeparators?.Select(c => c.ToString()).ToArray()
@@ -59,8 +59,8 @@ namespace ArgumentParser
         /// <param name="argSeparators">(Optional) array of strings that indicate a separator between arguments. Default value is { " " }</param>
         /// <param name="keyValueSeparators">(Optional) array of charcters that indicate a separator between the key and value in a key/value argument. Default values are { ':', '=' }</param>
         /// <param name="comparer">(Optional) comparer used to match named argument names. Defaults to StringComparer.OrdinalIgnoreCase, so "--output" and "--Output" are the same argument. Pass StringComparer.Ordinal to match names case-sensitively.</param>
-        public Parser(string[] argSeparators, char[] keyValueSeparators = null,
-            IEqualityComparer<string> comparer = null)
+        public Parser(string[]? argSeparators, char[]? keyValueSeparators = null,
+            IEqualityComparer<string>? comparer = null)
         {
             _argSeparators =
                 argSeparators
@@ -86,7 +86,7 @@ namespace ArgumentParser
         /// </summary>
         /// <param name="args">Array of string arguments to parse. May be null.</param>
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
-        public ParsedArguments Parse(string[] args)
+        public ParsedArguments Parse(string?[]? args)
         {
             // Concatenate the array of strings into a single string,
             // before passing to the Parse method that accepts a single string parameter.
@@ -110,7 +110,7 @@ namespace ArgumentParser
         /// </summary>
         /// <param name="arguments">String containing arguments to parse. May be null.</param>
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
-        public ParsedArguments Parse(string arguments)
+        public ParsedArguments Parse(string? arguments)
         {
             // Null is treated as no arguments rather than as an error, so a Main(string[] args)
             // caller does not have to guard the call. Empty input already returned an empty
@@ -142,7 +142,7 @@ namespace ArgumentParser
                     namedArguments[namedArgument.Key] = namedArgument.Value;
 
                     if (!allNamedArgumentValues.TryGetValue(namedArgument.Key,
-                            out List<string> values))
+                            out List<string>? values))
                     {
                         values = new List<string>();
 

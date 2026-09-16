@@ -108,7 +108,7 @@ namespace ArgumentParser
 
         private static string ValueName(OptionDefinition option)
         {
-            if (!string.IsNullOrWhiteSpace(option.ValueName))
+            if (option.ValueName != null && option.ValueName.Trim().Length > 0)
             {
                 return option.ValueName;
             }
@@ -178,9 +178,12 @@ namespace ArgumentParser
         /// Wraps at a word boundary, at the width asked for rather than the console's, so
         /// output that is piped to a file looks the same as output that is not.
         /// </summary>
-        private static IEnumerable<string> Wrap(string text, int width)
+        private static IEnumerable<string> Wrap(string? text, int width)
         {
-            if (string.IsNullOrWhiteSpace(text))
+            // Not string.IsNullOrWhiteSpace: it carries NotNullWhen(false) in the .NET 8
+            // reference assembly but not in netstandard2.0's, so that target cannot narrow
+            // text afterwards and warns on the loop below.
+            if (text == null || text.Trim().Length == 0)
             {
                 yield break;
             }

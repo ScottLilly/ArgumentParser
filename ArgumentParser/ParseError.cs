@@ -20,14 +20,14 @@ namespace ArgumentParser
         /// <summary>
         /// The offending value, where there was one. Null for a missing or unknown option.
         /// </summary>
-        public string Value { get; }
+        public string? Value { get; }
 
         /// <summary>
         /// A message suitable for showing to the person who typed the command.
         /// </summary>
         public string Message { get; }
 
-        internal ParseError(ParseErrorKind kind, string optionName, string value, string message)
+        internal ParseError(ParseErrorKind kind, string optionName, string? value, string message)
         {
             Kind = kind;
             OptionName = optionName;

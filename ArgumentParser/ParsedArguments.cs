@@ -54,9 +54,10 @@ namespace ArgumentParser
         /// <returns>
         /// Every value given for the name. An empty list if the name was not given, or if key is null.
         /// </returns>
-        public IReadOnlyList<string> AllValuesOf(string key)
+        public IReadOnlyList<string> AllValuesOf(string? key)
         {
-            if (key == null || !_allNamedArgumentValues.TryGetValue(key, out IReadOnlyList<string> values))
+            if (key == null
+                || !_allNamedArgumentValues.TryGetValue(key, out IReadOnlyList<string>? values))
             {
                 return s_noValues;
             }

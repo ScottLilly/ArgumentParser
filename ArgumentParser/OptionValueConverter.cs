@@ -28,92 +28,65 @@ namespace ArgumentParser
             || type == typeof(double)
             || type.IsEnum;
 
-        internal static bool TryConvert(string text, Type targetType, out object value)
+        /// <summary>
+        /// The converted value, or null when the text cannot be read as the target type. None
+        /// of the supported types converts to null, so null is unambiguous as "no".
+        /// </summary>
+        internal static object? Convert(string? text, Type targetType)
         {
-            value = null;
-
             if (text == null)
             {
-                return false;
+                return null;
             }
 
             if (targetType == typeof(string))
             {
-                value = text;
-
-                return true;
+                return text;
             }
 
             if (targetType == typeof(bool))
             {
-                if (!bool.TryParse(text, out bool parsedBool))
-                {
-                    return false;
-                }
-
-                value = parsedBool;
-
-                return true;
+                return bool.TryParse(text, out bool parsedBool) ? (object)parsedBool : null;
             }
 
             if (targetType == typeof(int))
             {
-                if (!int.TryParse(text, IntegerStyles, CultureInfo.InvariantCulture,
-                        out int parsedInt))
-                {
-                    return false;
-                }
-
-                value = parsedInt;
-
-                return true;
+                return int.TryParse(text, IntegerStyles, CultureInfo.InvariantCulture,
+                    out int parsedInt)
+                    ? (object)parsedInt
+                    : null;
             }
 
             if (targetType == typeof(long))
             {
-                if (!long.TryParse(text, IntegerStyles, CultureInfo.InvariantCulture,
-                        out long parsedLong))
-                {
-                    return false;
-                }
-
-                value = parsedLong;
-
-                return true;
+                return long.TryParse(text, IntegerStyles, CultureInfo.InvariantCulture,
+                    out long parsedLong)
+                    ? (object)parsedLong
+                    : null;
             }
 
             if (targetType == typeof(decimal))
             {
-                if (!decimal.TryParse(text, FractionalStyles, CultureInfo.InvariantCulture,
-                        out decimal parsedDecimal))
-                {
-                    return false;
-                }
-
-                value = parsedDecimal;
-
-                return true;
+                return decimal.TryParse(text, FractionalStyles, CultureInfo.InvariantCulture,
+                    out decimal parsedDecimal)
+                    ? (object)parsedDecimal
+                    : null;
             }
 
             if (targetType == typeof(double))
             {
-                if (!double.TryParse(text, FractionalStyles, CultureInfo.InvariantCulture,
-                        out double parsedDouble))
-                {
-                    return false;
-                }
-
-                value = parsedDouble;
-
-                return true;
+                return double.TryParse(text, FractionalStyles, CultureInfo.InvariantCulture,
+                    out double parsedDouble)
+                    ? (object)parsedDouble
+                    : null;
             }
 
             if (targetType.IsEnum)
             {
-                return TryConvertEnum(text, targetType, out value);
+                return ConvertEnum(text, targetType);
             }
 
-            return false;
+            return null;
         }
 
         /// <summary>
@@ -121,21 +94,17 @@ namespace ArgumentParser
         /// accepts the numeric form, so "3" would match any enum at all, and it accepts a comma
         /// separated list, so "Sales,Marketing" would silently combine two values.
         /// </summary>
-        private static bool TryConvertEnum(string text, Type enumType, out object value)
+        private static object? ConvertEnum(string text, Type enumType)
         {
-            value = null;
-
             foreach (string name in Enum.GetNames(enumType))
             {
                 if (string.Equals(name, text, StringComparison.OrdinalIgnoreCase))
                 {
-                    value = Enum.Parse(enumType, name);
-
-                    return true;
+                    return Enum.Parse(enumType, name);
                 }
             }
 
-            return false;
+            return null;
         }
     }
 }

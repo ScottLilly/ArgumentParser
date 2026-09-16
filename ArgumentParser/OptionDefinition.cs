@@ -45,22 +45,22 @@ namespace ArgumentParser
         /// <summary>
         /// The value used when the option is not given. Null when none was declared.
         /// </summary>
-        public object DefaultValue { get; }
+        public object? DefaultValue { get; }
 
         /// <summary>
         /// What the option does, for help text and error messages.
         /// </summary>
-        public string Description { get; }
+        public string? Description { get; }
 
         /// <summary>
         /// What the option's value is called in help text, such as "path" in "--output path".
         /// Falls back to something derived from the declared type when none was given.
         /// </summary>
-        public string ValueName { get; }
+        public string? ValueName { get; }
 
-        internal OptionDefinition(string name, IEnumerable<string> aliases, Type valueType,
-            bool isFlag, bool isRequired, bool isRepeatable, object defaultValue,
-            string description, string valueName)
+        internal OptionDefinition(string name, IEnumerable<string>? aliases, Type valueType,
+            bool isFlag, bool isRequired, bool isRepeatable, object? defaultValue,
+            string? description, string? valueName)
         {
             ValueName = valueName;
 

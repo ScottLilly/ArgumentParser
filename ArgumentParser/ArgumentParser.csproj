@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <!-- Nullable reference types need C# 8. netstandard2.0 would otherwise default to 7.3. -->
+    <LangVersion>latest</LangVersion>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<IncludeSymbols>true</IncludeSymbols>
 	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -28,6 +31,8 @@ Breaking changes:
 - A fluent builder with no separators configured uses the same defaults as the Parser constructor, instead of matching no named arguments.
 
 Added:
+- Nullable reference type annotations on the whole public API, so a consumer building with nullable enabled gets real compiler help instead of seeing everything as oblivious. The optional constructor parameters now read as deliberately optional, and Parse says in its signature that it accepts null.
+- A .NET 8 target alongside netstandard2.0. The package now ships lib/netstandard2.0 and lib/net8.0, and netstandard2.0 is still there for reach.
 - A declared option schema. ArgumentSchema.Create() declares each option's name, aliases, type, default, and whether it is required or repeatable, and schema.Parse returns a SchemaParseResult with converted values. Because the options are declared, a value can be written either way round ("--timeout 30" as well as "--timeout=30"), a flag needs no value, and enums are converted by name. The untyped Parser is unchanged and still suits a free-form string.
 - Help and usage text generated from the declared options, so it cannot drift from what the application actually accepts. "--help" and "-h" are recognized automatically and reported through the result rather than written to the console, so the caller decides where the text goes. Descriptions wrap at a fixed width rather than the console's, so redirected output is stable.
 - Error reporting for a schema parse. Unknown options, missing values, unconvertible values, missing required options and unexpected repeats are all reported, and every problem is collected rather than only the first. Read them from SchemaParseResult.Errors, or use ParseOrThrow for an ArgumentParseException carrying the same list.
@@ -51,7 +56,10 @@ Added:
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="logo_128.png">
+    <!-- Include rather than Update: multi-targeting packs from the outer build, where the
+         default None glob this used to amend is not populated, so Update matched nothing
+         and the icon was left out of the package (NU5046). -->
+    <None Include="logo_128.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>

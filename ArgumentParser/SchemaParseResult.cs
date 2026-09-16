@@ -12,9 +12,6 @@ namespace ArgumentParser
     /// </summary>
     public class SchemaParseResult
     {
-        private static readonly IReadOnlyList<string> s_noStrings =
-            new ReadOnlyCollection<string>(new string[0]);
-
         private readonly ArgumentSchema _schema;
         private readonly IReadOnlyDictionary<string, IReadOnlyList<object>> _values;
 
@@ -78,15 +75,17 @@ namespace ArgumentParser
         /// <param name="name">The option's name or any of its aliases.</param>
         /// <exception cref="ArgumentException">The name was never declared.</exception>
         /// <exception cref="InvalidOperationException">T is not the declared type.</exception>
-        public T ValueOf<T>(string name)
+        public T? ValueOf<T>(string name)
         {
             OptionDefinition option = RequireDeclared(name);
 
             RequireDeclaredType<T>(option);
 
-            if (!_values.TryGetValue(option.Name, out IReadOnlyList<object> values)
+            if (!_values.TryGetValue(option.Name, out IReadOnlyList<object>? values)
                 || values.Count == 0)
             {
+                // A reference-typed option with no declared default really is null here, so
+                // the return type says so rather than pretending otherwise.
                 return option.DefaultValue == null ? default : (T)option.DefaultValue;
             }
 
@@ -108,7 +107,7 @@ namespace ArgumentParser
 
             RequireDeclaredType<T>(option);
 
-            if (!_values.TryGetValue(option.Name, out IReadOnlyList<object> values))
+            if (!_values.TryGetValue(option.Name, out IReadOnlyList<object>? values))
             {
                 return new ReadOnlyCollection<T>(new T[0]);
             }
@@ -126,7 +125,9 @@ namespace ArgumentParser
 
         private OptionDefinition RequireDeclared(string name)
         {
-            if (!_schema.TryFindOption(name, out OptionDefinition option))
+            OptionDefinition? option = _schema.FindOption(name);
+
+            if (option == null)
             {
                 // Asking for an option that was never declared is a mistake in the calling
                 // code rather than bad input, so it throws instead of returning a default.

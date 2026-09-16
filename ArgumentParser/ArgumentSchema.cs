@@ -45,7 +45,7 @@ namespace ArgumentParser
         private readonly string[] _keyValueSeparators;
         private readonly string[] _optionPrefixes;
         private readonly IEqualityComparer<string> _comparer;
-        private readonly OptionDefinition _helpOption;
+        private readonly OptionDefinition? _helpOption;
 
         #endregion
 
@@ -58,23 +58,23 @@ namespace ArgumentParser
         /// <summary>
         /// The application's name, for the usage line. Null when none was given.
         /// </summary>
-        public string ApplicationName { get; }
+        public string? ApplicationName { get; }
 
         /// <summary>
         /// A one-line summary of what the application does. Null when none was given.
         /// </summary>
-        public string Description { get; }
+        public string? Description { get; }
 
         /// <summary>
         /// The usage line, either as given or built from the application name. Null when
         /// neither was given.
         /// </summary>
-        public string Usage { get; }
+        public string? Usage { get; }
 
         internal ArgumentSchema(IEnumerable<OptionDefinition> options, string[] argSeparators,
             string[] keyValueSeparators, string[] optionPrefixes,
-            IEqualityComparer<string> comparer, string applicationName, string description,
-            string usage, OptionDefinition helpOption)
+            IEqualityComparer<string> comparer, string? applicationName, string? description,
+            string? usage, OptionDefinition? helpOption)
         {
             Options = new ReadOnlyCollection<OptionDefinition>(options.ToList());
             _argSeparators = argSeparators;
@@ -113,7 +113,7 @@ namespace ArgumentParser
         /// arguments. An element containing whitespace is requoted before the join, so a path
         /// the shell already unquoted survives as one argument.
         /// </summary>
-        public SchemaParseResult Parse(string[] args) =>
+        public SchemaParseResult Parse(string?[]? args) =>
             Parse(args == null
                 ? string.Empty
                 : string.Join(" ", args.Select(ArgumentTokenizer.Requote)));
@@ -124,7 +124,7 @@ namespace ArgumentParser
         /// written either way round: "--timeout 60" and "--timeout=60" both work, and a flag
         /// needs no value at all.
         /// </summary>
-        public SchemaParseResult Parse(string arguments)
+        public SchemaParseResult Parse(string? arguments)
         {
             string[] tokens = ArgumentTokenizer
                 .Split(arguments ?? string.Empty, _argSeparators)
@@ -176,25 +176,28 @@ namespace ArgumentParser
         /// test Success. The exception carries every error, not only the first.
         /// </summary>
         /// <exception cref="ArgumentParseException">The arguments do not match the schema.</exception>
-        public SchemaParseResult ParseOrThrow(string arguments) => Throwing(Parse(arguments));
+        public SchemaParseResult ParseOrThrow(string? arguments) => Throwing(Parse(arguments));
 
         /// <summary>
         /// Parses against the declared options, throwing if anything is wrong instead of
         /// returning a result to check.
         /// </summary>
         /// <exception cref="ArgumentParseException">The arguments do not match the schema.</exception>
-        public SchemaParseResult ParseOrThrow(string[] args) => Throwing(Parse(args));
+        public SchemaParseResult ParseOrThrow(string?[]? args) => Throwing(Parse(args));
 
         #endregion
 
         #region Internal Methods
 
-        internal bool TryFindOption(string name, out OptionDefinition option)
-        {
-            option = null;
-
-            return name != null && _optionsByName.TryGetValue(name, out option);
-        }
+        /// <summary>
+        /// The option answering to the name, or null if none does. Returning the option rather
+        /// than a bool with an out parameter lets a caller's null check narrow the type, so
+        /// none of them needs a null-forgiving operator.
+        /// </summary>
+        internal OptionDefinition? FindOption(string? name) =>
+            name != null && _optionsByName.TryGetValue(name, out OptionDefinition? option)
+                ? option
+                : null;
 
         #endregion
 
@@ -212,7 +215,9 @@ namespace ArgumentParser
                 if (ArgumentTokenizer.TrySplitKeyValue(token, _keyValueSeparators,
                         out string inlineName, out string inlineValue))
                 {
-                    if (TryFindOption(inlineName, out OptionDefinition inlineOption))
+                    OptionDefinition? inlineOption = FindOption(inlineName);
+
+                    if (inlineOption != null)
                     {
                         Record(rawValues, inlineOption, inlineValue);
 
@@ -229,7 +234,9 @@ namespace ArgumentParser
 
                 // "--timeout 60", which only works because the declaration says the option
                 // takes a value. A flag is true by its presence and consumes nothing.
-                if (TryFindOption(token, out OptionDefinition option))
+                OptionDefinition? option = FindOption(token);
+
+                if (option != null)
                 {
                     if (option.IsFlag)
                     {
@@ -281,7 +288,7 @@ namespace ArgumentParser
         private static void Record(Dictionary<string, List<string>> rawValues,
             OptionDefinition option, string value)
         {
-            if (!rawValues.TryGetValue(option.Name, out List<string> values))
+            if (!rawValues.TryGetValue(option.Name, out List<string>? values))
             {
                 values = new List<string>();
 
@@ -297,7 +304,7 @@ namespace ArgumentParser
             foreach (OptionDefinition option in Options)
             {
                 if (option.IsRepeatable
-                    || !rawValues.TryGetValue(option.Name, out List<string> values)
+                    || !rawValues.TryGetValue(option.Name, out List<string>? values)
                     || values.Count < 2)
                 {
                     continue;
@@ -336,7 +343,9 @@ namespace ArgumentParser
 
                 foreach (string raw in entry.Value)
                 {
-                    if (OptionValueConverter.TryConvert(raw, option.ValueType, out object value))
+                    object? value = OptionValueConverter.Convert(raw, option.ValueType);
+
+                    if (value != null)
                     {
                         optionValues.Add(value);
 

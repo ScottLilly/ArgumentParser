@@ -356,7 +356,7 @@ public class TestArgumentSchema
     [TestMethod]
     public void Parse_NullInput_ReportsOnlyTheMissingRequiredOption()
     {
-        SchemaParseResult result = BuildStandardSchema().Parse((string)null!);
+        SchemaParseResult result = BuildStandardSchema().Parse((string?)null);
 
         Assert.IsFalse(result.Success);
         Assert.AreEqual(1, result.Errors.Count);

@@ -22,7 +22,7 @@ public class TestParserEdgeCases
     {
         Parser parser = new Parser();
 
-        ParsedArguments parsedArguments = parser.Parse((string)null!);
+        ParsedArguments parsedArguments = parser.Parse((string?)null);
 
         AssertNothingWasParsed(parsedArguments);
     }
@@ -32,7 +32,7 @@ public class TestParserEdgeCases
     {
         Parser parser = new Parser();
 
-        ParsedArguments parsedArguments = parser.Parse((string[])null!);
+        ParsedArguments parsedArguments = parser.Parse((string?[]?)null);
 
         AssertNothingWasParsed(parsedArguments);
     }
@@ -45,7 +45,7 @@ public class TestParserEdgeCases
         Parser parser = new Parser();
 
         ParsedArguments parsedArguments =
-            parser.Parse(new[] { "--mode=fast", null, "7", null }!);
+            parser.Parse(new[] { "--mode=fast", null, "7", null });
 
         Assert.AreEqual(2, parsedArguments.Arguments.Count);
         Assert.AreEqual("fast", parsedArguments.NamedArguments["--mode"]);
@@ -57,7 +57,7 @@ public class TestParserEdgeCases
     public void FluentParse_NullString_ReturnsNoArguments()
     {
         ParsedArguments parsedArguments =
-            FluentArgumentParser.Create().Parse((string)null!);
+            FluentArgumentParser.Create().Parse((string?)null);
 
         AssertNothingWasParsed(parsedArguments);
     }
@@ -66,7 +66,7 @@ public class TestParserEdgeCases
     public void FluentParse_NullStringArray_ReturnsNoArguments()
     {
         ParsedArguments parsedArguments =
-            FluentArgumentParser.Create().Parse((string[])null!);
+            FluentArgumentParser.Create().Parse((string?[]?)null);
 
         AssertNothingWasParsed(parsedArguments);
     }
@@ -178,13 +178,13 @@ public class TestParserEdgeCases
     [DataRow("--notGiven", DisplayName = "Name that was not given")]
     [DataRow("", DisplayName = "Empty name")]
     [DataRow(null, DisplayName = "Null name")]
-    public void AllValuesOf_NameThatIsNotPresent_ReturnsAnEmptyList(string key)
+    public void AllValuesOf_NameThatIsNotPresent_ReturnsAnEmptyList(string? key)
     {
         Parser parser = new Parser();
 
         ParsedArguments parsedArguments = parser.Parse("--mode:a");
 
-        Assert.AreEqual(0, parsedArguments.AllValuesOf(key!).Count);
+        Assert.AreEqual(0, parsedArguments.AllValuesOf(key).Count);
     }
 
     // The fluent path builds the same ParsedArguments, so it carries the same values.

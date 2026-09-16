@@ -33,7 +33,7 @@ namespace ArgumentParser
                     continue;
                 }
 
-                string separator =
+                string? separator =
                     insideQuotes ? null : MatchSeparatorAt(arguments, index, separators);
 
                 if (separator == null)
@@ -61,7 +61,7 @@ namespace ArgumentParser
         /// forces it, because whitespace is what the shell tokenized on. A separator such as
         /// "--" is left alone, since the parser is meant to strip that as a prefix.
         /// </summary>
-        internal static string Requote(string arg)
+        internal static string? Requote(string? arg)
         {
             if (arg == null || arg.IndexOf('"') >= 0 || !arg.Any(char.IsWhiteSpace))
             {
@@ -79,11 +79,11 @@ namespace ArgumentParser
         internal static bool TrySplitKeyValue(string argument, string[] separators,
             out string key, out string value)
         {
-            key = null;
-            value = null;
+            key = string.Empty;
+            value = string.Empty;
 
             int splitIndex = -1;
-            string splitSeparator = null;
+            int splitLength = 0;
 
             foreach (string separator in separators)
             {
@@ -92,7 +92,7 @@ namespace ArgumentParser
                 if (separatorIndex >= 1 && (splitIndex == -1 || separatorIndex < splitIndex))
                 {
                     splitIndex = separatorIndex;
-                    splitSeparator = separator;
+                    splitLength = separator.Length;
                 }
             }
 
@@ -102,7 +102,7 @@ namespace ArgumentParser
             }
 
             key = argument.Substring(0, splitIndex);
-            value = argument.Substring(splitIndex + splitSeparator.Length).Trim();
+            value = argument.Substring(splitIndex + splitLength).Trim();
 
             return true;
         }
@@ -111,9 +111,9 @@ namespace ArgumentParser
         /// Returns the separator starting at index, or null if none does. The longest match
         /// wins, so "--" is preferred over "-" however the separators were ordered.
         /// </summary>
-        private static string MatchSeparatorAt(string arguments, int index, string[] separators)
+        private static string? MatchSeparatorAt(string arguments, int index, string[] separators)
         {
-            string longestMatch = null;
+            string? longestMatch = null;
 
             foreach (string separator in separators)
             {

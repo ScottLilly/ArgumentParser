@@ -20,20 +20,20 @@ namespace ArgumentParser
         private string[] _keyValueSeparators = s_defaultKeyValueSeparators;
         private string[] _optionPrefixes = s_defaultOptionPrefixes;
         private IEqualityComparer<string> _comparer = StringComparer.OrdinalIgnoreCase;
-        private string _applicationName;
-        private string _description;
-        private string _usage;
+        private string? _applicationName;
+        private string? _description;
+        private string? _usage;
         private bool _includeHelpOption = true;
 
-        public IArgumentSchemaBuilder Option<T>(string name, string alias = null,
-            bool required = false, bool repeatable = false, T defaultValue = default,
-            string description = null, string valueName = null) =>
+        public IArgumentSchemaBuilder Option<T>(string name, string? alias = null,
+            bool required = false, bool repeatable = false, T? defaultValue = default,
+            string? description = null, string? valueName = null) =>
             Option(name, alias == null ? new string[0] : new[] { alias },
                 required, repeatable, defaultValue, description, valueName);
 
         public IArgumentSchemaBuilder Option<T>(string name, string[] aliases,
-            bool required = false, bool repeatable = false, T defaultValue = default,
-            string description = null, string valueName = null)
+            bool required = false, bool repeatable = false, T? defaultValue = default,
+            string? description = null, string? valueName = null)
         {
             if (!OptionValueConverter.IsSupported(typeof(T)))
             {
@@ -46,23 +46,23 @@ namespace ArgumentParser
                 repeatable, defaultValue, description, valueName));
         }
 
-        public IArgumentSchemaBuilder Flag(string name, string alias = null,
-            string description = null) =>
+        public IArgumentSchemaBuilder Flag(string name, string? alias = null,
+            string? description = null) =>
             Flag(name, alias == null ? new string[0] : new[] { alias }, description);
 
         public IArgumentSchemaBuilder Flag(string name, string[] aliases,
-            string description = null) =>
+            string? description = null) =>
             Add(new OptionDefinition(name, aliases, typeof(bool), true, false, false, false,
                 description, null));
 
-        public IArgumentSchemaBuilder WithArgumentSeparators(params string[] argumentSeparators)
+        public IArgumentSchemaBuilder WithArgumentSeparators(params string[]? argumentSeparators)
         {
             _argSeparators = UseOrKeepDefault(argumentSeparators, s_defaultArgSeparators);
 
             return this;
         }
 
-        public IArgumentSchemaBuilder WithKeyValueSeparators(params char[] keyValueSeparators)
+        public IArgumentSchemaBuilder WithKeyValueSeparators(params char[]? keyValueSeparators)
         {
             _keyValueSeparators = UseOrKeepDefault(
                 keyValueSeparators?.Select(c => c.ToString()).ToArray(),
@@ -71,7 +71,7 @@ namespace ArgumentParser
             return this;
         }
 
-        public IArgumentSchemaBuilder WithOptionPrefixes(params string[] optionPrefixes)
+        public IArgumentSchemaBuilder WithOptionPrefixes(params string[]? optionPrefixes)
         {
             // Longest first, so "--verbose" is recognized by "--" rather than by "-".
             _optionPrefixes = UseOrKeepDefault(optionPrefixes, s_defaultOptionPrefixes)
@@ -81,28 +81,28 @@ namespace ArgumentParser
             return this;
         }
 
-        public IArgumentSchemaBuilder WithComparer(IEqualityComparer<string> comparer)
+        public IArgumentSchemaBuilder WithComparer(IEqualityComparer<string>? comparer)
         {
             _comparer = comparer ?? StringComparer.OrdinalIgnoreCase;
 
             return this;
         }
 
-        public IArgumentSchemaBuilder WithApplicationName(string applicationName)
+        public IArgumentSchemaBuilder WithApplicationName(string? applicationName)
         {
             _applicationName = applicationName;
 
             return this;
         }
 
-        public IArgumentSchemaBuilder WithDescription(string description)
+        public IArgumentSchemaBuilder WithDescription(string? description)
         {
             _description = description;
 
             return this;
         }
 
-        public IArgumentSchemaBuilder WithUsage(string usage)
+        public IArgumentSchemaBuilder WithUsage(string? usage)
         {
             _usage = usage;
 
@@ -118,7 +118,7 @@ namespace ArgumentParser
 
         public ArgumentSchema Build()
         {
-            OptionDefinition helpOption = _includeHelpOption ? AddHelpOption() : null;
+            OptionDefinition? helpOption = _includeHelpOption ? AddHelpOption() : null;
 
             return new ArgumentSchema(_options, _argSeparators, _keyValueSeparators,
                 _optionPrefixes, _comparer, _applicationName, _description, _usage, helpOption);
@@ -127,7 +127,7 @@ namespace ArgumentParser
         // Added last, so it reads as the final line of the help text. Skipped entirely if the
         // caller has already used either name for something of their own, since taking it from
         // them silently would be worse than having no automatic help.
-        private OptionDefinition AddHelpOption()
+        private OptionDefinition? AddHelpOption()
         {
             string[] names = { "--help", "-h" };
 
@@ -153,7 +153,7 @@ namespace ArgumentParser
 
             foreach (string name in option.AllNames())
             {
-                OptionDefinition clash = _options.FirstOrDefault(
+                OptionDefinition? clash = _options.FirstOrDefault(
                     o => o.AllNames().Contains(name, _comparer));
 
                 if (clash != null)
@@ -171,7 +171,7 @@ namespace ArgumentParser
 
         // An empty array is treated as "not configured", so a caller who passes nothing keeps
         // the defaults instead of silently matching no separators at all.
-        private static string[] UseOrKeepDefault(string[] configured, string[] fallback) =>
+        private static string[] UseOrKeepDefault(string[]? configured, string[] fallback) =>
             configured == null || configured.Length == 0 ? fallback : configured;
     }
 }
