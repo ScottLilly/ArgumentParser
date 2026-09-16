@@ -7,7 +7,7 @@ namespace ArgumentParser;
 /// piece the untyped Parser has no equivalent of, and what makes unknown options, type
 /// conversion, required checks and repeated values detectable.
 /// </summary>
-public class OptionDefinition
+public sealed class OptionDefinition
 {
     /// <summary>
     /// The option's full name, including any prefix, as it is typed on the command line.

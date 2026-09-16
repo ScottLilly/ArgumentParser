@@ -14,7 +14,7 @@ namespace ArgumentParser;
 ///         .Parse(@"--solution:value1 -s|value2");
 /// </code>
 /// </example>
-public class FluentArgumentParser : IFluentArgumentParserBuilder
+public sealed class FluentArgumentParser : IFluentArgumentParserBuilder
 {
     #region Private variables
 

@@ -33,7 +33,7 @@ namespace ArgumentParser;
 /// int timeout = result.ValueOf&lt;int&gt;("--timeout");
 /// </code>
 /// </example>
-public class ArgumentSchema
+public sealed class ArgumentSchema
 {
     #region Private variables
 

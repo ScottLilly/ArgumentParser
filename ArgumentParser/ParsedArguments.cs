@@ -5,7 +5,7 @@ namespace ArgumentParser;
 /// <summary>
 /// The parsed arguments from string, or string aray, input.
 /// </summary>
-public class ParsedArguments
+public sealed class ParsedArguments
 {
     private static readonly IReadOnlyList<string> s_noValues =
         new ReadOnlyCollection<string>(new string[0]);

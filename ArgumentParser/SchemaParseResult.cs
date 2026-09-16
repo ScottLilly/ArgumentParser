@@ -7,7 +7,7 @@ namespace ArgumentParser;
 /// not, and the converted values. A result object rather than an exception, because a
 /// command line application usually wants to print every problem at once.
 /// </summary>
-public class SchemaParseResult
+public sealed class SchemaParseResult
 {
     private readonly ArgumentSchema _schema;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<object>> _values;

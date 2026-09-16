@@ -5,7 +5,7 @@ namespace ArgumentParser;
 /// than stopping at the first, because a command line application usually wants to print
 /// all of them at once instead of making the user fix them one run at a time.
 /// </summary>
-public class ParseError
+public sealed class ParseError
 {
     /// <summary>
     /// What kind of problem this is.
