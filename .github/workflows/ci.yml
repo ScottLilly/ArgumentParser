@@ -1,9 +1,13 @@
 name: Build and Test
 
-# Manually triggered from the Actions tab. Nothing starts this automatically, so pushing to
-# master does not run it. Building and testing happen locally; this is for when a run on a
-# clean machine is wanted.
+# Runs on every push to master, and on pull requests against it, so the Build Status badge in
+# the README means what a reader assumes it means. Still available from the Actions tab for a
+# run on a clean machine without pushing anything.
 on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
   workflow_dispatch:
 
 jobs:
