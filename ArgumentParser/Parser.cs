@@ -101,6 +101,8 @@ namespace ArgumentParser
             List<decimal> decimalArguments = new List<decimal>();
             List<string> stringArguments = new List<string>();
             Dictionary<string, string> namedArguments = new Dictionary<string, string>();
+            Dictionary<string, List<string>> allNamedArgumentValues =
+                new Dictionary<string, List<string>>();
 
             string[] args = splitArgs
                 .Select(arg => arg.Trim())
@@ -111,7 +113,20 @@ namespace ArgumentParser
             {
                 if (TryParseNamedArgument(arg, out KeyValuePair<string, string> namedArgument))
                 {
+                    // Last value wins, matching what most command line applications do with a
+                    // repeated option, but every value is kept so nothing the user typed is
+                    // lost. ParsedArguments.AllValuesOf exposes them.
                     namedArguments[namedArgument.Key] = namedArgument.Value;
+
+                    if (!allNamedArgumentValues.TryGetValue(namedArgument.Key,
+                            out List<string> values))
+                    {
+                        values = new List<string>();
+
+                        allNamedArgumentValues.Add(namedArgument.Key, values);
+                    }
+
+                    values.Add(namedArgument.Value);
                 }
                 else if (int.TryParse(arg, NumberStyles.Integer,
                              CultureInfo.InvariantCulture, out int intVal))
@@ -139,7 +154,8 @@ namespace ArgumentParser
                 integerArguments,
                 decimalArguments,
                 stringArguments,
-                namedArguments);
+                namedArguments,
+                allNamedArgumentValues);
         }
 
         #endregion

@@ -5,11 +5,10 @@ using ArgumentParser;
 namespace Tests.ArgumentParser;
 
 /// <summary>
-/// The edge cases listed in issue #51. One of these still pins behavior that is known to be
-/// wrong (issue #39, a repeated key), named in a comment with the issue that will change it.
-/// It is here so that fixing that issue cannot pass unnoticed: the test fails and gets
-/// rewritten to assert the corrected behavior, which is what happened to the tests for
-/// issues #40, #41, #42, #43 and #44.
+/// The edge cases listed in issue #51. These started out pinning behavior that was known to
+/// be wrong, so that fixing the issue behind each one could not pass unnoticed: the test
+/// failed and was rewritten to assert the corrected behavior. That has now happened to all
+/// of them, for issues #39, #40, #41, #42, #43 and #44.
 /// </summary>
 [TestClass]
 public class TestParserEdgeCases
@@ -106,7 +105,9 @@ public class TestParserEdgeCases
 
     #region Repeated keys
 
-    // Issue #39: the earlier value is lost, with nothing reported to the caller.
+    // Issue #39: NamedArguments keeps the last value, which is what most command line
+    // applications do with a repeated option, so this is now the deliberate contract rather
+    // than an accident. AllValuesOf is what stops the earlier value being lost.
     [TestMethod]
     public void Parse_KeyGivenMoreThanOnce_KeepsOnlyTheLastValue()
     {
@@ -117,6 +118,86 @@ public class TestParserEdgeCases
         Assert.AreEqual(2, parsedArguments.Arguments.Count);
         Assert.AreEqual(1, parsedArguments.NamedArguments.Count);
         Assert.AreEqual("b", parsedArguments.NamedArguments["--mode"]);
+    }
+
+    [TestMethod]
+    public void AllValuesOf_KeyGivenMoreThanOnce_ReturnsEveryValueInTheOrderGiven()
+    {
+        Parser parser = new Parser();
+
+        ParsedArguments parsedArguments =
+            parser.Parse("--output=a.json --output=b.sarif --output=c.xml");
+
+        CollectionAssert.AreEqual(
+            new[] { "a.json", "b.sarif", "c.xml" },
+            parsedArguments.AllValuesOf("--output").ToArray());
+    }
+
+    // The two views never disagree about which names are present, or about the winner.
+    [TestMethod]
+    public void AllValuesOf_AndNamedArguments_AgreeOnTheLastValue()
+    {
+        Parser parser = new Parser();
+
+        ParsedArguments parsedArguments = parser.Parse("--mode:a --mode:b --other:x");
+
+        foreach (KeyValuePair<string, string> named in parsedArguments.NamedArguments)
+        {
+            IReadOnlyList<string> allValues = parsedArguments.AllValuesOf(named.Key);
+
+            Assert.AreEqual(named.Value, allValues[allValues.Count - 1]);
+        }
+
+        Assert.AreEqual(2, parsedArguments.NamedArguments.Count);
+    }
+
+    [TestMethod]
+    public void AllValuesOf_KeyGivenOnce_ReturnsThatOneValue()
+    {
+        Parser parser = new Parser();
+
+        ParsedArguments parsedArguments = parser.Parse("--mode:a");
+
+        CollectionAssert.AreEqual(
+            new[] { "a" }, parsedArguments.AllValuesOf("--mode").ToArray());
+    }
+
+    // Repeating a name with the same value is still two values. Collapsing them would be a
+    // judgment about intent that belongs with the declared schema in issue #46.
+    [TestMethod]
+    public void AllValuesOf_SameValueGivenTwice_ReturnsItTwice()
+    {
+        Parser parser = new Parser();
+
+        ParsedArguments parsedArguments = parser.Parse("--exclude=bin --exclude=bin");
+
+        Assert.AreEqual(2, parsedArguments.AllValuesOf("--exclude").Count);
+    }
+
+    [TestMethod]
+    [DataRow("--notGiven", DisplayName = "Name that was not given")]
+    [DataRow("", DisplayName = "Empty name")]
+    [DataRow(null, DisplayName = "Null name")]
+    public void AllValuesOf_NameThatIsNotPresent_ReturnsAnEmptyList(string key)
+    {
+        Parser parser = new Parser();
+
+        ParsedArguments parsedArguments = parser.Parse("--mode:a");
+
+        Assert.AreEqual(0, parsedArguments.AllValuesOf(key!).Count);
+    }
+
+    // The fluent path builds the same ParsedArguments, so it carries the same values.
+    [TestMethod]
+    public void FluentParse_KeyGivenMoreThanOnce_KeepsEveryValue()
+    {
+        ParsedArguments parsedArguments =
+            FluentArgumentParser.Create().Parse("--exclude=bin --exclude=obj");
+
+        Assert.AreEqual("obj", parsedArguments.NamedArguments["--exclude"]);
+        CollectionAssert.AreEqual(
+            new[] { "bin", "obj" },
+            parsedArguments.AllValuesOf("--exclude").ToArray());
     }
 
     #endregion
