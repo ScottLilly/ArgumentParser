@@ -64,8 +64,10 @@ namespace ArgumentParser
 
         /// <summary>
         /// Parses an array of string arguments into a ParsedArguments object.
+        /// A null array means no arguments, and returns an empty ParsedArguments.
+        /// Null elements within the array are ignored.
         /// </summary>
-        /// <param name="args">Array of string arguments to parse</param>
+        /// <param name="args">Array of string arguments to parse. May be null.</param>
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
         public ParsedArguments Parse(string[] args)
         {
@@ -73,7 +75,7 @@ namespace ArgumentParser
             // before passing to the Parse method that accepts a single string parameter.
             // This is to handle command line arguments that may be intended as key/value pairs,
             // but have already been split into an array by a console app's static Main method.
-            return Parse(string.Join(" ", args));
+            return Parse(args == null ? string.Empty : string.Join(" ", args));
         }
 
         /// <summary>
@@ -82,13 +84,18 @@ namespace ArgumentParser
         /// line classifies identically on every machine. An argument counts as a number only
         /// if it is digits with an optional leading sign and, for decimals, a single period.
         /// Anything else, including group separators and exponents, is a string argument.
+        /// A null string means no arguments, and returns an empty ParsedArguments.
         /// </summary>
-        /// <param name="arguments">String containing arguments to parse</param>
+        /// <param name="arguments">String containing arguments to parse. May be null.</param>
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
         public ParsedArguments Parse(string arguments)
         {
-            string[] splitArgs = 
-                arguments.Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
+            // Null is treated as no arguments rather than as an error, so a Main(string[] args)
+            // caller does not have to guard the call. Empty input already returned an empty
+            // result, and this makes null agree with it.
+            string[] splitArgs =
+                (arguments ?? string.Empty)
+                .Split(_argSeparators, StringSplitOptions.RemoveEmptyEntries);
 
             List<int> integerArguments = new List<int>();
             List<decimal> decimalArguments = new List<decimal>();

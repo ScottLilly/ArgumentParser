@@ -5,33 +5,71 @@ using ArgumentParser;
 namespace Tests.ArgumentParser;
 
 /// <summary>
-/// The edge cases listed in issue #51. A few still pin behavior that is known to be wrong,
-/// each one named in a comment with the issue that will change it. They are here so that
-/// fixing one of those issues cannot pass unnoticed: the test fails and gets rewritten to
-/// assert the corrected behavior, which is what happened to the tests for issues #40, #41,
-/// #43 and #44.
+/// The edge cases listed in issue #51. One of these still pins behavior that is known to be
+/// wrong (issue #39, a repeated key), named in a comment with the issue that will change it.
+/// It is here so that fixing that issue cannot pass unnoticed: the test fails and gets
+/// rewritten to assert the corrected behavior, which is what happened to the tests for
+/// issues #40, #41, #42, #43 and #44.
 /// </summary>
 [TestClass]
 public class TestParserEdgeCases
 {
     #region Missing and empty input
 
-    // Issue #42: this should be a guarded ArgumentNullException, or an empty result.
+    // Issue #42: null means no arguments rather than being an error, so a Main(string[] args)
+    // caller does not have to guard the call. This matches what empty input already did.
     [TestMethod]
-    public void Parse_NullString_ThrowsNullReferenceException()
+    public void Parse_NullString_ReturnsNoArguments()
     {
         Parser parser = new Parser();
 
-        Assert.ThrowsExactly<NullReferenceException>(() => parser.Parse((string)null!));
+        ParsedArguments parsedArguments = parser.Parse((string)null!);
+
+        AssertNothingWasParsed(parsedArguments);
     }
 
-    // Issue #42: the string[] overload fails in string.Join rather than in Parse itself.
     [TestMethod]
-    public void Parse_NullStringArray_ThrowsArgumentNullException()
+    public void Parse_NullStringArray_ReturnsNoArguments()
     {
         Parser parser = new Parser();
 
-        Assert.ThrowsExactly<ArgumentNullException>(() => parser.Parse((string[])null!));
+        ParsedArguments parsedArguments = parser.Parse((string[])null!);
+
+        AssertNothingWasParsed(parsedArguments);
+    }
+
+    // A null element is not the same as a null array. It contributes nothing and the
+    // arguments either side of it still parse.
+    [TestMethod]
+    public void Parse_StringArrayContainingNullElements_IgnoresThem()
+    {
+        Parser parser = new Parser();
+
+        ParsedArguments parsedArguments =
+            parser.Parse(new[] { "--mode=fast", null, "7", null }!);
+
+        Assert.AreEqual(2, parsedArguments.Arguments.Count);
+        Assert.AreEqual("fast", parsedArguments.NamedArguments["--mode"]);
+        Assert.AreEqual(7, parsedArguments.IntegerArguments[0]);
+    }
+
+    // The fluent path goes through the same Parse, so it gets the same contract.
+    [TestMethod]
+    public void FluentParse_NullString_ReturnsNoArguments()
+    {
+        ParsedArguments parsedArguments =
+            FluentArgumentParser.Create().Parse((string)null!);
+
+        AssertNothingWasParsed(parsedArguments);
+    }
+
+    [TestMethod]
+    public void FluentParse_NullStringArray_ReturnsNoArguments()
+    {
+        ParsedArguments parsedArguments =
+            FluentArgumentParser.Create().Parse((string[])null!);
+
+        AssertNothingWasParsed(parsedArguments);
     }
 
     [TestMethod]
