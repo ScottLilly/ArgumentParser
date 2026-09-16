@@ -42,9 +42,16 @@ namespace ArgumentParser
         /// </summary>
         /// <typeparam name="T">Enum to check options against string arguments</typeparam>
         /// <returns>IEnumerable of string parameters that match a value of the enum</returns>
-        public IEnumerable<T> EnumArgumentsOfType<T>() where T : struct =>
-            StringArguments.Where(a => Enum.TryParse(a, true, out T _))
-                .Select(a => (T)Enum.Parse(typeof(T), a, true));
+        public IEnumerable<T> EnumArgumentsOfType<T>() where T : struct, Enum
+        {
+            foreach (string argument in StringArguments)
+            {
+                if (Enum.TryParse(argument, true, out T value))
+                {
+                    yield return value;
+                }
+            }
+        }
 
         internal ParsedArguments(
             IEnumerable<string> arguments,

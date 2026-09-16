@@ -81,20 +81,26 @@ namespace ArgumentParser
 
         public ParsedArguments Parse(string arguments)
         {
-            Parser parser = new Parser(
-                _argumentSeparators.ToArray(),
-                _keyValueSeparators.ToArray());
-
-            return parser.Parse(arguments);
+            return BuildParser().Parse(arguments);
         }
 
         public ParsedArguments Parse(string[] arguments)
         {
-            Parser parser = new Parser(
-                _argumentSeparators.ToArray(),
-                _keyValueSeparators.ToArray());
+            return BuildParser().Parse(arguments);
+        }
 
-            return parser.Parse(arguments);
+        #endregion
+
+        #region Private methods
+
+        // A separator set that was never added to is passed as null rather than as an empty
+        // array, so Parser falls back to its own defaults. An empty array would silently
+        // match nothing, making Create().Parse(...) behave differently from new Parser().
+        private Parser BuildParser()
+        {
+            return new Parser(
+                _argumentSeparators.Count > 0 ? _argumentSeparators.ToArray() : null,
+                _keyValueSeparators.Count > 0 ? _keyValueSeparators.ToArray() : null);
         }
 
         #endregion

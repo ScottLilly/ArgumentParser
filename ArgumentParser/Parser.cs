@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 
 namespace ArgumentParser
@@ -77,6 +78,10 @@ namespace ArgumentParser
 
         /// <summary>
         /// Parses a single string of arguments into a ParsedArguments object.
+        /// Numeric arguments are recognized with the invariant culture, so the same command
+        /// line classifies identically on every machine. An argument counts as a number only
+        /// if it is digits with an optional leading sign and, for decimals, a single period.
+        /// Anything else, including group separators and exponents, is a string argument.
         /// </summary>
         /// <param name="arguments">String containing arguments to parse</param>
         /// <returns>ParsedArguments object, populate with values from arguments parameter</returns>
@@ -101,11 +106,18 @@ namespace ArgumentParser
                 {
                     namedArguments[namedArgument.Key] = namedArgument.Value;
                 }
-                else if (int.TryParse(arg, out int intVal))
+                else if (int.TryParse(arg, NumberStyles.Integer,
+                             CultureInfo.InvariantCulture, out int intVal))
                 {
                     integerArguments.Add(intVal);
                 }
-                else if (decimal.TryParse(arg, out decimal decimalVal))
+                // Deliberately narrower than NumberStyles.Number, which also accepts group
+                // separators and a trailing sign. Nobody types "1,234" or "5-" on a command
+                // line, and a token wrongly taken for a number is dropped from StringArguments
+                // where the caller would look for it.
+                else if (decimal.TryParse(arg,
+                             NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+                             CultureInfo.InvariantCulture, out decimal decimalVal))
                 {
                     decimalArguments.Add(decimalVal);
                 }
@@ -132,21 +144,33 @@ namespace ArgumentParser
         {
             namedArgument = default;
 
+            // Leftmost separator wins, rather than the first separator in the configured
+            // order. Otherwise a value containing a later separator ("--out=C:\build")
+            // splits at that one instead of at the separator the caller actually typed.
+            int splitIndex = -1;
+            string splitSeparator = null;
+
             foreach (string separator in _keyValueSeparators)
             {
                 int separatorIndex = argument.IndexOf(separator, StringComparison.Ordinal);
 
-                if (separatorIndex >= 1)
+                if (separatorIndex >= 1 && (splitIndex == -1 || separatorIndex < splitIndex))
                 {
-                    namedArgument = new KeyValuePair<string, string>(
-                        argument.Substring(0, separatorIndex),
-                        argument.Substring(separatorIndex + separator.Length).Trim());
-
-                    return true;
+                    splitIndex = separatorIndex;
+                    splitSeparator = separator;
                 }
             }
 
-            return false;
+            if (splitIndex == -1)
+            {
+                return false;
+            }
+
+            namedArgument = new KeyValuePair<string, string>(
+                argument.Substring(0, splitIndex),
+                argument.Substring(splitIndex + splitSeparator.Length).Trim());
+
+            return true;
         }
 
         #endregion

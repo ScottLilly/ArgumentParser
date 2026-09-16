@@ -5,10 +5,11 @@ using ArgumentParser;
 namespace Tests.ArgumentParser;
 
 /// <summary>
-/// The edge cases listed in issue #51. Several of these pin behavior that is known to be
-/// wrong, each one named in a comment with the issue that will change it. They are here so
-/// that fixing one of those issues cannot pass unnoticed: the test fails and gets rewritten
-/// to assert the corrected behavior.
+/// The edge cases listed in issue #51. A few still pin behavior that is known to be wrong,
+/// each one named in a comment with the issue that will change it. They are here so that
+/// fixing one of those issues cannot pass unnoticed: the test fails and gets rewritten to
+/// assert the corrected behavior, which is what happened to the tests for issues #40, #41,
+/// #43 and #44.
 /// </summary>
 [TestClass]
 public class TestParserEdgeCases
@@ -84,12 +85,15 @@ public class TestParserEdgeCases
 
     #region Separator characters inside a value
 
-    // Issue #40: matching is separator-major, so the parser looks for every ':' anywhere in
-    // the argument before it considers the '=' that actually separates key from value.
+    // Issue #40: matching is leftmost-wins, so the separator the caller typed is the one that
+    // splits the argument, whatever order the separators were configured in. Everything after
+    // it is the value, including further separator characters.
     [TestMethod]
-    [DataRow(@"--out=C:\build", "--out=C", @"\build", DisplayName = "Drive letter colon in a Windows path")]
-    [DataRow("--url=http://x", "--url=http", "//x", DisplayName = "Scheme colon in a URL")]
-    public void Parse_ValueContainingAnotherSeparator_SplitsAtTheWrongSeparator(
+    [DataRow(@"--out=C:\build", "--out", @"C:\build", DisplayName = "Drive letter colon in a Windows path")]
+    [DataRow("--url=http://x", "--url", "http://x", DisplayName = "Scheme colon in a URL")]
+    [DataRow("--output=json:a.json", "--output", "json:a.json", DisplayName = "format:path style value")]
+    [DataRow("--mode:a=b", "--mode", "a=b", DisplayName = "Equals sign inside a colon-separated value")]
+    public void Parse_ValueContainingAnotherSeparator_SplitsAtTheLeftmostSeparator(
         string argument, string expectedKey, string expectedValue)
     {
         Parser parser = new Parser();
@@ -100,8 +104,8 @@ public class TestParserEdgeCases
         Assert.AreEqual(expectedValue, parsedArguments.NamedArguments[expectedKey]);
     }
 
-    // The same argument splits correctly once '=' is the only key/value separator, which is
-    // what identifies the cause as separator ordering rather than the value's content.
+    // The same argument with '=' as the only key/value separator, which is how this was
+    // written before issue #40 was fixed and is the behavior the default separators now match.
     [TestMethod]
     public void Parse_ValueContainingAColon_SplitsCorrectlyWhenColonIsNotASeparator()
     {
@@ -117,45 +121,114 @@ public class TestParserEdgeCases
 
     #region Culture
 
-    // Issue #41: int.TryParse and decimal.TryParse use the current culture, so which bucket
-    // an argument lands in depends on the machine the program runs on. CurrentCulture is set
-    // here rather than relying on the test machine's own, so this fails everywhere or nowhere.
+    // Issue #41: numbers are classified with the invariant culture, so a command line means
+    // the same thing on a developer machine and on a CI agent. CurrentCulture is set here
+    // rather than relying on the test machine's own, so this fails everywhere or nowhere.
     [TestMethod]
-    public void Parse_CommaDecimalUnderAGermanCulture_IsClassifiedAsADecimal()
+    [DataRow("de-DE", DisplayName = "Comma decimal separator, period group separator")]
+    [DataRow("en-US", DisplayName = "Period decimal separator, comma group separator")]
+    [DataRow("fr-FR", DisplayName = "Comma decimal separator, narrow space group separator")]
+    public void Parse_PointDecimal_ReadsThePointAsADecimalPointWhateverTheCurrentCulture(
+        string cultureName)
     {
-        CultureInfo originalCulture = CultureInfo.CurrentCulture;
-
-        try
+        RunUnderCulture(cultureName, () =>
         {
-            CultureInfo.CurrentCulture = new CultureInfo("de-DE");
-
-            ParsedArguments parsedArguments = new Parser().Parse("123,45");
-
-            // Under the invariant culture this is not a number at all, and would be a string.
-            Assert.AreEqual(1, parsedArguments.DecimalArguments.Count);
-            Assert.AreEqual(123.45m, parsedArguments.DecimalArguments[0]);
-            Assert.AreEqual(0, parsedArguments.StringArguments.Count);
-        }
-        finally
-        {
-            CultureInfo.CurrentCulture = originalCulture;
-        }
-    }
-
-    // Issue #41: the same input, read as a value a thousand times larger.
-    [TestMethod]
-    public void Parse_PointDecimalUnderAGermanCulture_ReadsThePointAsAGroupSeparator()
-    {
-        CultureInfo originalCulture = CultureInfo.CurrentCulture;
-
-        try
-        {
-            CultureInfo.CurrentCulture = new CultureInfo("de-DE");
-
             ParsedArguments parsedArguments = new Parser().Parse("123.45");
 
             Assert.AreEqual(1, parsedArguments.DecimalArguments.Count);
-            Assert.AreEqual(12345m, parsedArguments.DecimalArguments[0]);
+            Assert.AreEqual(123.45m, parsedArguments.DecimalArguments[0]);
+            Assert.AreEqual(0, parsedArguments.StringArguments.Count);
+        });
+    }
+
+    // A German-style decimal is not a number under the invariant culture, and a comma is not
+    // read as a group separator either, so it is a string argument on every machine.
+    [TestMethod]
+    [DataRow("de-DE", DisplayName = "German culture")]
+    [DataRow("en-US", DisplayName = "US culture")]
+    public void Parse_CommaDecimal_IsAStringArgumentWhateverTheCurrentCulture(
+        string cultureName)
+    {
+        RunUnderCulture(cultureName, () =>
+        {
+            ParsedArguments parsedArguments = new Parser().Parse("123,45");
+
+            Assert.AreEqual(0, parsedArguments.DecimalArguments.Count);
+            Assert.AreEqual(0, parsedArguments.IntegerArguments.Count);
+            Assert.AreEqual(1, parsedArguments.StringArguments.Count);
+            Assert.AreEqual("123,45", parsedArguments.StringArguments[0]);
+        });
+    }
+
+    // Issue #41: the tokens a command line never legitimately carries. Group separators, a
+    // trailing sign and an exponent are all rejected, so a token that only resembles a number
+    // stays a string argument rather than disappearing out of StringArguments.
+    [TestMethod]
+    [DataRow("1,234", DisplayName = "Group separator")]
+    [DataRow("5-", DisplayName = "Trailing sign")]
+    [DataRow("1e5", DisplayName = "Exponent")]
+    [DataRow("(5)", DisplayName = "Accounting negative")]
+    [DataRow("1 234", DisplayName = "Space as a group separator")]
+    public void Parse_TokenThatOnlyResemblesANumber_IsAStringArgument(string argument)
+    {
+        ParsedArguments parsedArguments = new Parser(new[] { '\t' }).Parse(argument);
+
+        Assert.AreEqual(0, parsedArguments.IntegerArguments.Count);
+        Assert.AreEqual(0, parsedArguments.DecimalArguments.Count);
+        Assert.AreEqual(argument, parsedArguments.StringArguments[0]);
+    }
+
+    // The forms that are accepted, pinned alongside the rejections above so the boundary is
+    // readable in one place.
+    [TestMethod]
+    [DataRow("123", 123, DisplayName = "Digits")]
+    [DataRow("-5", -5, DisplayName = "Leading minus")]
+    [DataRow("+5", 5, DisplayName = "Leading plus")]
+    public void Parse_AcceptedIntegerForms_AreIntegerArguments(string argument, int expected)
+    {
+        ParsedArguments parsedArguments = new Parser().Parse(argument);
+
+        Assert.AreEqual(1, parsedArguments.IntegerArguments.Count);
+        Assert.AreEqual(expected, parsedArguments.IntegerArguments[0]);
+    }
+
+    [TestMethod]
+    [DataRow("45.67", 45.67, DisplayName = "Digits either side of the point")]
+    [DataRow("-45.67", -45.67, DisplayName = "Leading minus")]
+    [DataRow(".5", 0.5, DisplayName = "No leading digit")]
+    [DataRow("45.", 45.0, DisplayName = "No trailing digit")]
+    public void Parse_AcceptedDecimalForms_AreDecimalArguments(string argument, double expected)
+    {
+        ParsedArguments parsedArguments = new Parser().Parse(argument);
+
+        Assert.AreEqual(1, parsedArguments.DecimalArguments.Count);
+        Assert.AreEqual((decimal)expected, parsedArguments.DecimalArguments[0]);
+    }
+
+    // Integers are read with NumberStyles.Integer, which allows no group separators at all.
+    [TestMethod]
+    [DataRow("de-DE", DisplayName = "German culture")]
+    [DataRow("en-US", DisplayName = "US culture")]
+    public void Parse_PlainInteger_IsAnIntegerWhateverTheCurrentCulture(string cultureName)
+    {
+        RunUnderCulture(cultureName, () =>
+        {
+            ParsedArguments parsedArguments = new Parser().Parse("1234 -5");
+
+            CollectionAssert.AreEqual(
+                new[] { 1234, -5 }, parsedArguments.IntegerArguments.ToArray());
+        });
+    }
+
+    private static void RunUnderCulture(string cultureName, Action test)
+    {
+        CultureInfo originalCulture = CultureInfo.CurrentCulture;
+
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo(cultureName);
+
+            test();
         }
         finally
         {
@@ -167,23 +240,21 @@ public class TestParserEdgeCases
 
     #region Fluent parser with nothing configured
 
-    // Issue #43: Create().Parse(...) hands the Parser two empty arrays rather than letting it
-    // fall back to its defaults, so no key/value separator is ever matched.
+    // Issue #43: a fluent builder with nothing added falls back to the same defaults the
+    // plain constructor uses, so Create().Parse(...) and new Parser().Parse(...) agree.
     [TestMethod]
-    public void FluentParse_NoSeparatorsConfigured_FindsNoNamedArguments()
+    public void FluentParse_NoSeparatorsConfigured_UsesTheDefaultSeparators()
     {
         ParsedArguments parsedArguments =
             FluentArgumentParser.Create().Parse("--mode:test extra 1");
 
         Assert.AreEqual(3, parsedArguments.Arguments.Count);
-        Assert.AreEqual(0, parsedArguments.NamedArguments.Count);
-        Assert.AreEqual(2, parsedArguments.StringArguments.Count);
+        Assert.AreEqual(1, parsedArguments.NamedArguments.Count);
+        Assert.AreEqual("test", parsedArguments.NamedArguments["--mode"]);
+        Assert.AreEqual(1, parsedArguments.StringArguments.Count);
         Assert.AreEqual(1, parsedArguments.IntegerArguments.Count);
-        CollectionAssert.Contains(parsedArguments.StringArguments.ToList(), "--mode:test");
     }
 
-    // The non-fluent Parser does fall back to its defaults for the same input, which is the
-    // inconsistency issue #43 describes.
     [TestMethod]
     public void Parse_NoSeparatorsPassedToTheConstructor_UsesTheDefaultSeparators()
     {
@@ -193,30 +264,54 @@ public class TestParserEdgeCases
         Assert.AreEqual("test", parsedArguments.NamedArguments["--mode"]);
     }
 
-    #endregion
-
-    #region EnumArgumentsOfType with a non-enum type
-
-    // Issue #44: the constraint is "struct", so a non-enum struct compiles and then fails at
-    // run time inside Enum.TryParse. An "enum" constraint would make this a compile error.
+    // Only the half that was configured falls back. Adding a key/value separator and no
+    // argument separator still splits on the default space.
     [TestMethod]
-    public void EnumArgumentsOfType_NonEnumStruct_ThrowsWhenEnumerated()
+    public void FluentParse_OnlyKeyValueSeparatorConfigured_StillSplitsOnTheDefaultSpace()
     {
-        ParsedArguments parsedArguments = new Parser().Parse("production 1");
+        ParsedArguments parsedArguments =
+            FluentArgumentParser
+            .Create()
+            .AddKeyValueSeparator('|')
+            .Parse("--mode|test extra");
 
-        Assert.ThrowsExactly<ArgumentException>(
-            () => parsedArguments.EnumArgumentsOfType<int>().ToList());
+        Assert.AreEqual(2, parsedArguments.Arguments.Count);
+        Assert.AreEqual("test", parsedArguments.NamedArguments["--mode"]);
+        Assert.AreEqual(1, parsedArguments.StringArguments.Count);
     }
 
-    // The failure is deferred, because the query is lazy. Nothing throws until it is walked.
+    // The mirror of the above: an argument separator with no key/value separator still uses
+    // the default ':' and '=' rather than matching nothing.
     [TestMethod]
-    public void EnumArgumentsOfType_NonEnumStruct_DoesNotThrowUntilEnumerated()
+    public void FluentParse_OnlyArgumentSeparatorConfigured_StillUsesTheDefaultKeyValueSeparators()
     {
-        ParsedArguments parsedArguments = new Parser().Parse("production 1");
+        ParsedArguments parsedArguments =
+            FluentArgumentParser
+            .Create()
+            .AddArgumentSeparator(',')
+            .Parse("mode=test,other:value");
 
-        IEnumerable<int> unenumerated = parsedArguments.EnumArgumentsOfType<int>();
+        Assert.AreEqual(2, parsedArguments.NamedArguments.Count);
+        Assert.AreEqual("test", parsedArguments.NamedArguments["mode"]);
+        Assert.AreEqual("value", parsedArguments.NamedArguments["other"]);
+    }
 
-        Assert.IsNotNull(unenumerated);
+    #endregion
+
+    #region EnumArgumentsOfType
+
+    // Issue #44: the constraint is now "struct, Enum", so EnumArgumentsOfType<int>() and
+    // EnumArgumentsOfType<DateTime>() are compile errors rather than run time ArgumentExceptions.
+    // That cannot be asserted from a test, so what is pinned here is that the enum case still
+    // works and that a non-matching string is skipped rather than throwing.
+    [TestMethod]
+    public void EnumArgumentsOfType_ArgumentsThatDoNotMatchAnyName_AreSkipped()
+    {
+        ParsedArguments parsedArguments = new Parser().Parse("production nonsense sales");
+
+        CollectionAssert.AreEqual(
+            new[] { EmployeeType.Production, EmployeeType.Sales },
+            parsedArguments.EnumArgumentsOfType<EmployeeType>().ToArray());
     }
 
     #endregion
