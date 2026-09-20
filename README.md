@@ -5,7 +5,7 @@ A lightweight C# NuGet package for parsing a string, or an array of strings such
 It works two ways: hand it a free-form string and it sorts the arguments into integers, decimals, strings, named key/value pairs and enum values, or declare the options your application accepts and it converts them, applies defaults, reports what does not match, and writes your <code>--help</code> text.
 
 ## Project Overview
-![Build Status](https://github.com/ScottLilly/ArgumentParser/actions/workflows/ci.yml/badge.svg)
+![Build Status](https://github.com/ScottLilly/ArgumentParser/actions/workflows/build-and-test.yml/badge.svg)
 [![NuGet](https://img.shields.io/nuget/v/ScottLilly.ArgumentParser)](https://www.nuget.org/packages/ScottLilly.ArgumentParser/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ScottLilly.ArgumentParser)](https://www.nuget.org/packages/ScottLilly.ArgumentParser/)
 [![License](https://img.shields.io/github/license/ScottLilly/ArgumentParser)](https://github.com/ScottLilly/ArgumentParser/blob/master/LICENSE.txt)
