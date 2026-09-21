@@ -6,6 +6,7 @@ It works two ways: hand it a free-form string and it sorts the arguments into in
 
 ## Project Overview
 ![Build Status](https://github.com/ScottLilly/ArgumentParser/actions/workflows/build-and-test.yml/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/ScottLilly/ArgumentParser/badge.svg?branch=master)](https://coveralls.io/github/ScottLilly/ArgumentParser?branch=master)
 [![NuGet](https://img.shields.io/nuget/v/ScottLilly.ArgumentParser)](https://www.nuget.org/packages/ScottLilly.ArgumentParser/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/ScottLilly.ArgumentParser)](https://www.nuget.org/packages/ScottLilly.ArgumentParser/)
 [![License](https://img.shields.io/github/license/ScottLilly/ArgumentParser)](https://github.com/ScottLilly/ArgumentParser/blob/master/LICENSE.txt)

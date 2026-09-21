@@ -15,7 +15,8 @@ on:
   workflow_dispatch:
 
 # Stated explicitly so this workflow stays read-only regardless of the repo's default token
-# permissions. It only needs to check out, build, and test.
+# permissions. It only needs to check out, build, test, and identify the repo to Coveralls,
+# none of which writes anything back here.
 permissions:
   contents: read
 
@@ -41,5 +42,26 @@ jobs:
 
       # Runs every test project in the solution. Adding another one needs nothing here, as long
       # as it is in the solution.
+      #
+      # "XPlat Code Coverage" is coverlet, which both test projects already reference. The
+      # exclusions in CodeCoverage.runsettings are what keep the test assemblies out of the
+      # numbers, so the figure that reaches Coveralls is the shipping library alone.
       - name: Test
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      # Coverlet writes each project's report into its own GUID-named folder, so the paths
+      # cannot be written out here, and the action takes a space-separated list rather than a
+      # glob. Both reports are uploaded and merged: they cover the same library today, but the
+      # two projects compile it for different target frameworks, so a future #if would show up
+      # in only one of them.
+      - name: Find the coverage reports
+        id: coverage
+        run: echo "files=$(find ./coverage -name coverage.cobertura.xml | tr '\n' ' ')" >> "$GITHUB_OUTPUT"
+
+      # github-token defaults to the built-in one, which is all this needs: Coveralls creates
+      # the project on the first upload, so there is no account setup and no repo secret.
+      - name: Publish coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          format: cobertura
+          files: ${{ steps.coverage.outputs.files }}

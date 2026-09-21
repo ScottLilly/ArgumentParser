@@ -18,7 +18,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{EED7
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{F07F9A0F-2EBC-4D80-B97C-A48A8597F2ED}"
 	ProjectSection(SolutionItems) = preProject
-		.github\workflows\ci.yml = .github\workflows\ci.yml
+		.github\workflows\build-and-test.yml = .github\workflows\build-and-test.yml
+		.github\workflows\release.yml = .github\workflows\release.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests.ArgumentParser.NetStandard", "Tests.ArgumentParser.NetStandard\Tests.ArgumentParser.NetStandard.csproj", "{4B4A6AAA-E16D-4723-951E-5B2175EE3279}"
