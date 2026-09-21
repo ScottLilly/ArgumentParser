@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Keeps code coverage reporting to the code that actually ships. Without this, a coverage run
+  counts Tests.ArgumentParser and Tests.ArgumentParser.NetStandard as covered code, which drags
+  the number toward 100% no matter how much of the library is untested.
+
+  Both test projects point at this file with <RunSettingsFilePath>, so Visual Studio's "Analyze
+  Code Coverage" and a `dotnet test` run that asks for a collector both pick it up, without
+  anyone having to select it.
+
+  Both collectors are enabled="false" here. That is not "off": it means a plain `dotnet test`
+  does not start collecting, and the configuration below is still applied when a run asks for
+  coverage. Adding a collector to a runsettings file otherwise turns it on for every run.
+-->
+<RunSettings>
+
+  <DataCollectionRunSettings>
+    <DataCollectors>
+
+      <!-- Visual Studio's own collector, which is what "Analyze Code Coverage for All Tests"
+           uses, and what the "Code Coverage" collector name selects from `dotnet test`. It
+           produces the .coverage files under TestResults. ModulePath is matched against the
+           full path of each assembly, so the pattern is anchored to the file name: a bare
+           "Tests\." would also match ArgumentParser.dll sitting in a test project's bin
+           folder, and exclude the one assembly that matters. -->
+      <DataCollector friendlyName="Code Coverage"
+                     uri="datacollector://Microsoft/CodeCoverage/2.0"
+                     assemblyQualifiedName="Microsoft.VisualStudio.Coverage.DynamicCoverageDataCollector, Microsoft.VisualStudio.TraceCollector, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a"
+                     enabled="false">
+        <Configuration>
+          <CodeCoverage>
+            <ModulePaths>
+              <Exclude>
+                <ModulePath>.*[\\/]Tests\.[^\\/]*\.dll$</ModulePath>
+              </Exclude>
+            </ModulePaths>
+          </CodeCoverage>
+        </Configuration>
+      </DataCollector>
+
+      <!-- coverlet.collector, which the "XPlat Code Coverage" collector name selects.
+           It already leaves the test assemblies out on its own; the filter is here so that
+           stays true if that default ever changes. Coverlet's filter syntax is [assembly]type,
+           and the assembly part matches the simple name rather than a path. -->
+      <DataCollector friendlyName="XPlat code coverage"
+                     enabled="false">
+        <Configuration>
+          <Exclude>[Tests.*]*</Exclude>
+        </Configuration>
+      </DataCollector>
+
+    </DataCollectors>
+  </DataCollectionRunSettings>
+
+</RunSettings>
