@@ -60,8 +60,15 @@ jobs:
 
       # github-token defaults to the built-in one, which is all this needs: Coveralls creates
       # the project on the first upload, so there is no account setup and no repo secret.
+      #
+      # fail-on-error is off because a pull request from a fork gets a restricted token that
+      # cannot post, so the default would fail an outside contributor's build for something
+      # their change had nothing to do with. The trade is that a genuinely broken upload goes
+      # quiet and the badge goes stale, so the step's log is the place to look if the badge
+      # stops moving.
       - name: Publish coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           format: cobertura
           files: ${{ steps.coverage.outputs.files }}
+          fail-on-error: false
