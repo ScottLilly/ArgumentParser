@@ -27,7 +27,7 @@
     <Title>Argument Parser</Title>
     <Authors>Scott Lilly</Authors>
     <Description>Package to easily parse individual parameters from a string, or array of strings, as is often done when running command line applications.</Description>
-    <Copyright>2023-2026, Scott Lilly</Copyright>
+    <Copyright>Copyright (c) 2023-2026 Scott Lilly</Copyright>
     <RepositoryUrl>https://github.com/ScottLilly/ArgumentParser</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
