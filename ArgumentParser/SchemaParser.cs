@@ -112,12 +112,12 @@ internal sealed class SchemaParser
                 continue;
             }
 
-            if (TryReadInlineValue(tokens[index], rawValues, errors))
+            if (ConsumedAsInlineValue(tokens[index], rawValues, errors))
             {
                 continue;
             }
 
-            if (TryReadSeparateValue(tokens, ref index, rawValues, errors))
+            if (ConsumedAsSeparateValue(tokens, ref index, rawValues, errors))
             {
                 continue;
             }
@@ -136,10 +136,12 @@ internal sealed class SchemaParser
     /// <summary>
     /// Reads "--timeout=60" and "--timeout:60", where the value is part of the same token.
     /// The name has to be declared, so a value that merely contains a separator
-    /// ("C:\build") is not mistaken for one. False means the token was not one of these
-    /// and the caller should go on looking at it.
+    /// ("C:\build") is not mistaken for one. True means the token was consumed as this
+    /// form, which includes the malformed cases that record an error instead of a value.
+    /// False means the token was not one of these and the caller should go on looking at
+    /// it.
     /// </summary>
-    private bool TryReadInlineValue(ArgumentToken token,
+    private bool ConsumedAsInlineValue(ArgumentToken token,
         Dictionary<string, List<string>> rawValues, List<ParseError> errors)
     {
         if (!ArgumentTokenizer.TrySplitKeyValue(token.Text, _keyValueSeparators,
@@ -179,10 +181,11 @@ internal sealed class SchemaParser
     /// <summary>
     /// Reads "--timeout 60", which only works because the declaration says the option takes
     /// a value, and the flag that is true by its presence and consumes nothing. Advances
-    /// the index past the value when one is taken. False means the token is not a declared
-    /// option name.
+    /// the index past the value when one is taken. True means the token was consumed as
+    /// this form, which includes a declared option whose value was left out and so
+    /// records an error instead. False means the token is not a declared option name.
     /// </summary>
-    private bool TryReadSeparateValue(ArgumentToken[] tokens, ref int index,
+    private bool ConsumedAsSeparateValue(ArgumentToken[] tokens, ref int index,
         Dictionary<string, List<string>> rawValues, List<ParseError> errors)
     {
         string token = tokens[index].Text;
